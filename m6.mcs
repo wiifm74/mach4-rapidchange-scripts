@@ -1,0 +1,27 @@
+function m6()
+  local inst = mc.mcGetInstance()
+  local selectedTool = mc.mcToolGetSelected(inst)
+  selectedTool = math.tointeger(selectedTool)
+  local currentTool = mc.mcToolGetCurrent(inst)
+  currentTool = math.tointeger(currentTool)
+
+  if selectedTool == currentTool then
+    mc.mcCntlSetLastError(inst, "Current tool was selected. No tool change required.")
+    do return end
+  end
+
+  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
+  if (package.loaded.RapidChangeATC_Configuration == nil) then
+    config = require "RapidChangeATC_Configuration"
+  end
+
+  local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
+  local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
+
+  local gCode = ""
+  gCode = gCode .. string.format("G%i G90\n", config.Units)
+  gCode = gCode .. "M5\n"
+  gCode = gCode .. "M9\n"
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+
+end
