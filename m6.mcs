@@ -11,8 +11,8 @@ function m6()
   end
 
   package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
-  if (package.loaded.RapidChangeATC_Configuration == nil) then
-    config = require "RapidChangeATC_Configuration"
+  if (package.loaded.ATC_Config == nil) then
+    config = require "ATC_Config"
   end
 
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
@@ -24,4 +24,25 @@ function m6()
   gCode = gCode .. "M9\n"
   mc.mcCntlGcodeExecuteWait(inst, gCode)
 
+  -- Before Tool Change Hook
+  if config.BeforeToolChangeMCode > 0 then
+    -- gCode = string.format("M%i\n", config.BeforeToolChangeMCode)
+    -- mc.mcCntlGcodeExecuteWait(inst, gCode)
+    mc.mcCntlSetLastError(inst, "Made inner")
+  end
+
+  -- Record Tool Change Start Position
+  local xInitial = mc.mcCntlGetPoundVar(inst, 5021)
+  local yInitial = mc.mcCntlGetPoundVar(inst, 5022)
+
+  -- Unload
+  if currentTool == 0 then
+    gCode = string.format("G53 G0 Z%.3f\n", config.ZSafeClearance)
+
+    if config.DustCoverMode ~= 0 then
+      gCode = gCode .. string.format("M%i\n", config.DustCoverOpenMCode)
+    end
+  end
+
+  --mc.mcCntlSetLastError(inst, "Reached the end")
 end

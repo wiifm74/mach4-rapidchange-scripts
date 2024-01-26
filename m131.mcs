@@ -1,0 +1,53 @@
+function m131()
+  local inst = mc.mcGetInstance()
+  local currentTool = math.tointeger(mc.mcToolGetCurrent(inst))
+
+  if currentTool == 0 then
+    return
+  end
+
+  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
+  if (package.loaded.ATC_Config == nil) then
+    config = require "ATC_Config"
+  end
+
+  local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
+  local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
+
+  local gCode = ""
+  gCode = gCode .. string.format("G%i G90\n", config.Units)
+  gCode = gCode .. "M5\n"
+  gCode = gCode .. "M9\n"
+  gCode = gCode .. "G49\n"
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+  
+  local currentMachZ = mc.mcCntlGetPoundVar(inst, 5023)
+  local currentWorkZ = mc.mcCntlGetPoundVar(inst, 5043)
+  local machToWorkOffset = currentMachZ - currentWorkZ
+  local zSeekTargetWork = config.ZSeekTarget - machToWorkOffset
+
+  gCode = ""
+
+  if (currentMachZ - 0.001) < config.ZMoveToProbe then
+    gCode = gCode .. string.format("G53 G0 Z%.3f\n", config.ZMoveToProbe)
+  end
+
+  gCode = gCode .. string.format("G53 G0 X%.3f Y%.3f\n", config.XToolSetter, config.YToolSetter)
+  gCode = gCode .. string.format("G53 G0 Z%.3f\n", config.ZSeekStart)
+
+  gCode = gCode .. string.format("G31 Z%.3f\n F%.1f", zSeekTargetWork, config.SeekFeedrate)
+  gCode = gCode .. string.format("G0 G91 Z%.3f\n", config.SeekRetreat)
+  gCode = gCode .. string.format("G31 Z%.3f\n F%.1f", zSeekTargetWork, config.SetFeedrate)
+  gCode = gCode .. string.format("G53 G90 G0 Z%.3f\n", config.ZSafeClearance)
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+
+  
+  local zTrigger = mc.mcCntlGetPoundVar(inst, 5073)
+  mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f", zTrigger))
+  mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
+
+  gCode = string.format("G43 H%i", currentTool)
+  gCode = gCode .. string.format("G%i G%i\n", initAbsMode, initUnits)
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+
+end
