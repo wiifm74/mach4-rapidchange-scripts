@@ -73,10 +73,10 @@ ATC_Config.ToolSetterIsInternal = false -- true or false, whether the tool sette
 ATC_Config.XToolSetter = 5.000          -- X Position (Machine Coordinates) of the center of the tool setter.
 ATC_Config.YToolSetter = 5.000          -- Y Position (Machine Coordinates) of the center of the tool setter.
 ATC_Config.ZSeekStart = 5.000           -- Z Position (Machine Coordinates) of the start position for the seek function.
-ATC_Config.ZSeekTarget = 4.5          -- Z Position (Machine Coordinates) of the furthest point of travel for the seek function.
+ATC_Config.ZSeekTarget = 4.5            -- Z Position (Machine Coordinates) of the furthest point of travel for the seek function.
 ATC_Config.SeekRetreat = 0.2            -- The distance to retreat between the seek and set functions.
-ATC_Config.SeekFeedrate = 11.8           -- Feedrate for the seek function.
-ATC_Config.SetFeedrate = 3.9           -- Feedrate for the set function.
+ATC_Config.SeekFeedrate = 11.8          -- Feedrate for the seek function.
+ATC_Config.SetFeedrate = 3.9            -- Feedrate for the set function.
 
 -- Tool Recognition Settings
 ATC_Config.ToolRecognitionEnabled     = false -- true or false
