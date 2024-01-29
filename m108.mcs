@@ -28,6 +28,6 @@ function m108()
 end
 
 if (mc.mcInEditor() == 1) then
-	dofile ("load_rapidChangeAT.mcs")
+	dofile ("load_rapidChangeATC.mcs")
 	m108()
 end
