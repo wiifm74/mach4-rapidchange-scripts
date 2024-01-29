@@ -10,11 +10,6 @@ function m6()
     do return end
   end
 
-  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
-  if (package.loaded.ATC_Config == nil) then
-    config = require "ATC_Config"
-  end
-
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
   local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
 
@@ -45,4 +40,9 @@ function m6()
   end
 
   --mc.mcCntlSetLastError(inst, "Reached the end")
+end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeAT.mcs")
+	m6()
 end
