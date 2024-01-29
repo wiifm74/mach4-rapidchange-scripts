@@ -6,11 +6,6 @@ function m131()
     return
   end
 
-  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
-  if (package.loaded.ATC_Config == nil) then
-    config = require "ATC_Config"
-  end
-
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
   local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
 
@@ -50,4 +45,9 @@ function m131()
   gCode = gCode .. string.format("G%i G%i\n", initAbsMode, initUnits)
   mc.mcCntlGcodeExecuteWait(inst, gCode)
 
+end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeAT.mcs")
+	m131()
 end
