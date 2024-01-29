@@ -1,11 +1,6 @@
 function m109()
   local inst = mc.mcGetInstance()
 
-  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
-  if (package.loaded.ATC_Config == nil) then
-    config = require "ATC_Config"
-  end
-
   if config.DustCoverMode == 1 then
     local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003))
     local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006))
@@ -30,4 +25,9 @@ function m109()
   end
 
   mc.mcCntlSetLastError(inst, "Dust Cover Disabled")
+end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeAT.mcs")
+	m109()
 end
