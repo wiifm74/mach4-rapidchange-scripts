@@ -1,9 +1,19 @@
-function m131()
+--This function will probe the current tool on the toolsetter and program the relative difference of the tools to the Master tool, which is always tool 1.
+--This is intended to work with the stock AVID CNC touchplate routine for getting the work offsets.  Note that there must be a valid execution of tool 1 first since it is the master.
+--The Master tool is the only one allowed to be used to set work coordinates with the touchplate
+
+function m132()
   local inst = mc.mcGetInstance()
   local currentTool = math.tointeger(mc.mcToolGetCurrent(inst))
 
+  if (mc.mcAxisIsHomed(inst, mc.Z_AXIS) ~= 1) or (mc.mcAxisIsHomed(inst, mc.X_AXIS) ~= 1) or (mc.mcAxisIsHomed(inst, mc.Y_AXIS) ~= 1) then
+	wx.wxMessageBox("Machine is not homed, it is not safe to perform this move")
+	do return end
+  end	
+
   if currentTool == 0 then
-    return
+    mc.mcCntlSetLastError(inst, "Tool 0 selected, returning from m132")
+    do return end
   end
 
   package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
@@ -11,7 +21,10 @@ function m131()
     config = require "ATC_Config"
   end
   
- 
+  if zMaster == nil then
+	zMaster = 0.0
+  end
+
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
   local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
 
@@ -50,20 +63,30 @@ function m131()
   local rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
 
   if(rc==mc.MERROR_NOT_NOW) then
-       wx.wxMessageBox(inst,"Didn't complete probe sequence correctly")
+	wx.wxMessageBox(inst,"Didn't complete probe sequence correctly")
   do return end
   end
 
 
   local zTrigger = mc.mcCntlGetPoundVar(inst, 5073)
-  mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f", zTrigger))
-  mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
-
+  
+  if currentTool == 1 then  --Master
+    zMaster = zTrigger
+	zTrigger = 0.0
+    mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f on tool number %.i", zTrigger, currentTool ))
+	mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
+  else  --Not Master
+    if zMaster == 0.0 then
+       mc.mcCntlSetLastError(inst, "Master Tool has not been run yet.  Load Master and probe it first.")
+    do return end
+    end
+    zTrigger = zTrigger - zMaster  --set relative to Master
+    mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f on tool number %.i", zTrigger, currentTool ))
+	mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
+  end
+  
   gCode = ""
-  --***Commented the below line out temporarily until I can figure out what the AVID
-  --***touchplate routine is doing.  It wants to return 
-  --***to the tool offset plus the g54 value which of course is no possible
-  --gCode = string.format("g43 H%i \n", currentTool)
+  gCode = string.format("g43 h%i \n", currentTool)
   gCode = gCode .. string.format("g%i g%i \n", initAbsMode, initUnits)
   rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
   
@@ -71,5 +94,10 @@ function m131()
        wx.wxMessageBox(inst,"Didn't execute mode restoration correctly")
   do return end
   end
-  
+end
+
+if(mc.mcInEditor() == 1) then
+    -- If you are in the mcLua editor, this will cause your script to execute if you Run or Debug 
+    -- Make sure your Capitalization and numbers match that of the function you are calling 
+    m132()
 end

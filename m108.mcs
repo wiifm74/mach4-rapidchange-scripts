@@ -10,8 +10,8 @@ function m108()
     local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003))
     local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006))
     local gCode = ""
-    gCode = gCode .. string.format("G53 G0 G90 G%i %s%.3f\n", config.Units, config.DustCoverAxis, config.DustCoverOpenPos)
-    gCode = gCode .. string.format("G%i G%i\n", initAbsMode, initUnits)
+    gCode = gCode .. string.format("g53 g0 g90 g%i %s%.3f\n", config.Units, config.DustCoverAxis, config.DustCoverOpenPos)
+    gCode = gCode .. string.format("g%i g%i\n", initAbsMode, initUnits)
     mc.mcCntlGcodeExecuteWait(inst, gCode)
     return
   end
@@ -23,7 +23,7 @@ function m108()
 
     if state == 0 then
       mc.mcSignalSetState(handle, 1)
-      mc.mcCntlGcodeExecuteWait(inst, string.format("G4 P%.2f\n", config.DustCoverWait))
+      mc.mcCntlGcodeExecuteWait(inst, string.format("g4 p%.2f\n", config.DustCoverWait))
     end
 
     return

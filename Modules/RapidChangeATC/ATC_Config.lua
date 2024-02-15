@@ -52,19 +52,19 @@ Information for
 ATC_Config.Units                  = Inches    -- Units for the configuration values, must match reporting units for Mach4 Profile
 ATC_Config.Alignment              = X          -- X or Y: Axis on which the magazine is aligned.
 ATC_Config.Direction              = Positive   -- Positive or Negative: Direction of travel from Pocket 1 to Pocket 2.
-ATC_Config.PocketCount            = 0        -- Number of tool pockets in the magazine.
-ATC_Config.PocketOffset           = 0.000   -- Distance between pockets (center-to-center) along the alignment axis.
+ATC_Config.PocketCount            = 5        -- Number of tool pockets in the magazine.
+ATC_Config.PocketOffset           = 5   -- Distance between pockets (center-to-center) along the alignment axis.
 ATC_Config.XPocket1               = 0.000       -- X Position (Machine Coordinates) of the center of Pocket 1.
 ATC_Config.YPocket1               = 0.000       -- Y Position (Machine Coordinates) of the center of Pocket 1.
-ATC_Config.XManual                = 0.000        -- X Position (Machine Coordinates) for manual tool changes.
-ATC_Config.YManual                = 0.000        -- Y Position (Machine Coordinates) for manual tool changes.
+ATC_Config.XManual                = 1        -- X Position (Machine Coordinates) for manual tool changes.
+ATC_Config.YManual                = 1        -- Y Position (Machine Coordinates) for manual tool changes.
 ATC_Config.ZEngage                = 0.000        -- Z Position (Machine Coordinates) for full engagement with the clamping nut.
-ATC_Config.ZMoveToLoad            = 10.000    -- Z Position (Machine Coordinates) between unloading and loading a tool.
-ATC_Config.ZMoveToProbe           = 10.000   -- Z Position (Machine Coordinates) after loading before setting TLO.
-ATC_Config.ZSafeClearance         = 15.000 -- Z Position (Machine Coordinates) for clearance of all potential obstacles.
-ATC_Config.LoadRPM                = 0.0          -- Spindle speed for loading a tool (Clockwise operation).
-ATC_Config.UnloadRPM              = 0.0        -- Spindle speed for unloading a tool (Counterclockwise operation).
-ATC_Config.EngageFeedrate         = 0.0   -- Feedrate for the engagement process.
+ATC_Config.ZMoveToLoad            = 2.000    -- Z Position (Machine Coordinates) between unloading and loading a tool.
+ATC_Config.ZMoveToProbe           = 4.000   -- Z Position (Machine Coordinates) after loading before setting TLO.
+ATC_Config.ZSafeClearance         = 5.000 -- Z Position (Machine Coordinates) for clearance of all potential obstacles.
+ATC_Config.LoadRPM                = 1500.0          -- Spindle speed for loading a tool (Clockwise operation).
+ATC_Config.UnloadRPM              = 1500.0        -- Spindle speed for unloading a tool (Counterclockwise operation).
+ATC_Config.EngageFeedrate         = 20.0   -- Feedrate for the engagement process.
 
 -- Tool Touch Off Settings
 ATC_Config.ToolTouchOffEnabled = false  -- true or false, whether or not to call the tool touch off macro after a tool change.
@@ -82,7 +82,7 @@ ATC_Config.SetFeedrate = 3.9            -- Feedrate for the set function.
 ATC_Config.ToolRecognitionEnabled     = false -- true or false
 ATC_Config.ToolRecognitionOverridden  = false  -- true or false, if true and tool recognition is disabled, will skip tool check
 ATC_Config.ToolRecognitionInput       = 1
-ATC_Config.ToolRecognitionActiveLow   = false
+ATC_Config.ToolRecognitionActiveBroken = false
 ATC_Config.ToolRecognitionZZone1      = 0.000
 ATC_Config.ToolRecognitionZZone2      = 0.000
 
@@ -99,7 +99,57 @@ ATC_Config.DustCoverCloseMCode        = 109
 
 
 -- Tool Change Hooks
-ATC_Config.BeforeToolChangeMCode        = 91     -- M Code for custom macro to run at the start of a tool change, 0 is ignored
+ATC_Config.BeforeToolChangeMCode        = 0     -- M Code for custom macro to run at the start of a tool change, 0 is ignored
 ATC_Config.AfterToolChangeMCode         = 0     -- M Code for custom macro to run after a tool change, 0 is ignored
+
+function ATC_Config.GetPocketX(toolNum)
+  -- If the tool does not have a magazine pocket, return the manual position
+  if toolNum <= 0 or toolNum > ATC_Config.PocketCount then
+    return ATC_Config.XManual
+  end
+
+  if ATC_Config.Alignment == Axis.X then
+    return ATC_Config.XPocket1 + ((toolNum - 1) * ATC_Config.PocketOffset * ATC_Config.Direction)
+  else
+    return ATC_Config.XPocket1
+  end
+end
+
+function ATC_Config.GetPocketY(toolNum)
+  -- If the tool does not have a magazine pocket, return the manual position
+  if toolNum <= 0 or toolNum > ATC_Config.PocketCount then
+    return ATC_Config.YManual
+  end
+
+  if ATC_Config.Alignment == Axis.Y then
+    return ATC_Config.YPocket1 + ((toolNum - 1) * ATC_Config.PocketOffset * ATC_Config.Direction)
+  else
+    return ATC_Config.YPocket1
+  end
+end
+
+function ATC_Config.GetZRetreat()
+  if ATC_Config.Units == Millimeters then
+    return ATC_Config.ZEngage + 12
+  else
+    return ATC_Config.ZEngage + 0.47
+  end
+end
+
+function ATC_Config.GetZSpindleStart()
+  if ATC_Config.Units == Millimeters then
+    return ATC_Config.ZEngage + 23
+  else
+    return ATC_Config.ZEngage + 0.91
+  end
+end
+
+function ATC_Config.GetIRBeamBrokenState()
+  if ATC_Config.ToolRecognitionActiveBroken == true then
+    return 1
+  else
+    return 0
+  end
+end
 
 return ATC_Config
