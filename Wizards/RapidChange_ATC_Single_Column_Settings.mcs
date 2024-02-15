@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- Name:        RapidChange_ATC_SingleColumns_Settings.mcs
 -- Purpose:     Create and adjust settings for RapidChange ATC on Mach4
--- Author:      Dennis Maude
+-- Author:      
 -----------------------------------------------------------------------------
 
 function GetNextID()
