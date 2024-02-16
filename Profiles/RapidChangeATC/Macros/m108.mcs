@@ -31,3 +31,8 @@ function m108()
 
   mc.mcCntlSetLastError(inst, "Dust Cover Disabled")
 end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeATC.mcs")
+	m108()
+end

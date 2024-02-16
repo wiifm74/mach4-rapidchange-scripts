@@ -356,3 +356,8 @@ function m6()
 
   --TODO: Call post tool change hook.
 end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeATC.mcs")
+	m6()
+end

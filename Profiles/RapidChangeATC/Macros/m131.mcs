@@ -73,3 +73,8 @@ function m131()
   end
   
 end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeATC.mcs")
+	m131()
+end
