@@ -1,0 +1,48 @@
+function m6()
+  local inst = mc.mcGetInstance()
+  local selectedTool = mc.mcToolGetSelected(inst)
+  selectedTool = math.tointeger(selectedTool)
+  local currentTool = mc.mcToolGetCurrent(inst)
+  currentTool = math.tointeger(currentTool)
+
+  if selectedTool == currentTool then
+    mc.mcCntlSetLastError(inst, "Current tool was selected. No tool change required.")
+    do return end
+  end
+
+  local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
+  local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
+
+  local gCode = ""
+  gCode = gCode .. string.format("G%i G90\n", config.Units)
+  gCode = gCode .. "M5\n"
+  gCode = gCode .. "M9\n"
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+
+  -- Before Tool Change Hook
+  if config.BeforeToolChangeMCode > 0 then
+    -- gCode = string.format("M%i\n", config.BeforeToolChangeMCode)
+    -- mc.mcCntlGcodeExecuteWait(inst, gCode)
+    mc.mcCntlSetLastError(inst, "Made inner")
+  end
+
+  -- Record Tool Change Start Position
+  local xInitial = mc.mcCntlGetPoundVar(inst, 5021)
+  local yInitial = mc.mcCntlGetPoundVar(inst, 5022)
+
+  -- Unload
+  if currentTool == 0 then
+    gCode = string.format("G53 G0 Z%.3f\n", config.ZSafeClearance)
+
+    if config.DustCoverMode ~= 0 then
+      gCode = gCode .. string.format("M%i\n", config.DustCoverOpenMCode)
+    end
+  end
+
+  --mc.mcCntlSetLastError(inst, "Reached the end")
+end
+
+if (mc.mcInEditor() == 1) then
+	dofile ("load_rapidChangeATC.mcs")
+	m6()
+end
