@@ -6,15 +6,28 @@ function m131()
     return
   end
 
+  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
+  if (package.loaded.ATC_Config == nil) then
+    config = require "ATC_Config"
+  end
+  
+ 
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
   local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
 
+
   local gCode = ""
-  gCode = gCode .. string.format("G%i G90\n", config.Units)
-  gCode = gCode .. "M5\n"
-  gCode = gCode .. "M9\n"
-  gCode = gCode .. "G49\n"
-  mc.mcCntlGcodeExecuteWait(inst, gCode)
+  gCode = gCode .. string.format("g%i g90 \n", config.Units)
+  gCode = gCode .. "m5 \n"
+  gCode = gCode .. "m9 \n"
+  gCode = gCode .. "g49 \n"
+  rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
+  
+  if(rc==mc.MERROR_NOT_NOW) then
+     wx.wxMessageBox(inst,"Didn't complete mode initialization correctly")
+  do return end
+  end
+  
   
   local currentMachZ = mc.mcCntlGetPoundVar(inst, 5023)
   local currentWorkZ = mc.mcCntlGetPoundVar(inst, 5043)
@@ -24,27 +37,41 @@ function m131()
   gCode = ""
 
   if (currentMachZ - 0.001) < config.ZMoveToProbe then
-    gCode = gCode .. string.format("G53 G0 Z%.3f\n", config.ZMoveToProbe)
+    gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZMoveToProbe)
   end
 
-  gCode = gCode .. string.format("G53 G0 X%.3f Y%.3f\n", config.XToolSetter, config.YToolSetter)
-  gCode = gCode .. string.format("G53 G0 Z%.3f\n", config.ZSeekStart)
+  gCode = gCode .. string.format("g53 g0 x%.3f y%.3f \n", config.XToolSetter, config.YToolSetter)
+  gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZSeekStart)
 
-  gCode = gCode .. string.format("G31 Z%.3f\n F%.1f", zSeekTargetWork, config.SeekFeedrate)
-  gCode = gCode .. string.format("G0 G91 Z%.3f\n", config.SeekRetreat)
-  gCode = gCode .. string.format("G31 Z%.3f\n F%.1f", zSeekTargetWork, config.SetFeedrate)
-  gCode = gCode .. string.format("G53 G90 G0 Z%.3f\n", config.ZSafeClearance)
-  mc.mcCntlGcodeExecuteWait(inst, gCode)
+  gCode = gCode .. string.format("g31 z%.3f f%.1f \n", zSeekTargetWork, config.SeekFeedrate)
+  gCode = gCode .. string.format("g91 g0 z%.3f \n", config.SeekRetreat)
+  gCode = gCode .. string.format("g90 g31 z%.3f f%.1f \n", zSeekTargetWork, config.SetFeedrate)
+  gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZSafeClearance)
+  local rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
 
-  
+  if(rc==mc.MERROR_NOT_NOW) then
+       wx.wxMessageBox(inst,"Didn't complete probe sequence correctly")
+  do return end
+  end
+
+
   local zTrigger = mc.mcCntlGetPoundVar(inst, 5073)
   mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f", zTrigger))
   mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
 
-  gCode = string.format("G43 H%i", currentTool)
-  gCode = gCode .. string.format("G%i G%i\n", initAbsMode, initUnits)
-  mc.mcCntlGcodeExecuteWait(inst, gCode)
-
+  gCode = ""
+  --***Commented the below line out temporarily until I can figure out what the AVID
+  --***touchplate routine is doing.  It wants to return 
+  --***to the tool offset plus the g54 value which of course is no possible
+  --gCode = string.format("g43 H%i \n", currentTool)
+  gCode = gCode .. string.format("g%i g%i \n", initAbsMode, initUnits)
+  rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
+  
+  if(rc==mc.MERROR_NOT_NOW) then
+       wx.wxMessageBox(inst,"Didn't execute mode restoration correctly")
+  do return end
+  end
+  
 end
 
 if (mc.mcInEditor() == 1) then

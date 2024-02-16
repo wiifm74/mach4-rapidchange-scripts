@@ -10,36 +10,351 @@ function m6()
     do return end
   end
 
+  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
+  if (package.loaded.ATC_Config == nil) then
+    config = require "ATC_Config"
+  end
+
   local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
   local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
-
-  local gCode = ""
-  gCode = gCode .. string.format("G%i G90\n", config.Units)
-  gCode = gCode .. "M5\n"
-  gCode = gCode .. "M9\n"
-  mc.mcCntlGcodeExecuteWait(inst, gCode)
-
-  -- Before Tool Change Hook
-  if config.BeforeToolChangeMCode > 0 then
-    -- gCode = string.format("M%i\n", config.BeforeToolChangeMCode)
-    -- mc.mcCntlGcodeExecuteWait(inst, gCode)
-    mc.mcCntlSetLastError(inst, "Made inner")
-  end
 
   -- Record Tool Change Start Position
   local xInitial = mc.mcCntlGetPoundVar(inst, 5021)
   local yInitial = mc.mcCntlGetPoundVar(inst, 5022)
 
-  -- Unload
-  if currentTool == 0 then
-    gCode = string.format("G53 G0 Z%.3f\n", config.ZSafeClearance)
+  -- G Code commands --
+  local goToCurrentToolPocketXY = string.format("g53 g0 x%.3f y%.3f\n",
+    config.GetPocketX(currentTool),
+    config.GetPocketY(currentTool))
 
-    if config.DustCoverMode ~= 0 then
-      gCode = gCode .. string.format("M%i\n", config.DustCoverOpenMCode)
-    end
+  local goToSelectedToolPocketXY = string.format("g53 g0 x%.3f y%.3f\n",
+  config.GetPocketX(selectedTool),
+  config.GetPocketY(selectedTool))
+
+  local engageSocket = string.format("g53 g0 z%.3f f%.1f\n", config.ZEngage, config.EngageFeedrate)
+  local retreatFromEngagement = string.format("g53 g0 z%.3f f%.1f\n", config.GetZRetreat(), config.EngageFeedrate)
+  local goToInitialXY = string.format("g53 g0 x%.3f y%.3f\n", xInitial, yInitial)
+  local goToManualXYCommand = string.format("g53 g0 x%.3f y%.3f\n", config.XManual, config.YManual)
+  local goToSafeClearance = string.format("g53 g0 z%.3f\n", config.ZSafeClearance)
+  local goToSpindleStart = string.format("g53 g0 z%.3f\n", config.GetZSpindleStart())
+  local goToZMoveToLoad = string.format("g53 g0 z%.3f\n", config.ZMoveToLoad)
+  local goToZMoveToProbe = string.format("g53 g0 z%.3f\n", config.ZMoveToProbe)
+  local goToZZone1 = string.format("g53 g0 z%.3f\n", config.ToolRecognitionZZone1)
+  local goToZZone2 = string.format("g53 g0 z%.3f\n", config.ToolRecognitionZZone2)
+  local executeToolTouchOff = string.format("m%i\n", config.ToolTouchOffMCode)
+  local spinForLoading = string.format("m3 s%.1f\n", config.LoadRPM)
+  local spinForUnloading = string.format("m4 s%.1f\n", config.UnloadRPM)
+  local stopSpindle = "m5\n"
+
+  -- Dust cover commands
+  local openDustCover = ""
+  local closeDustCover = ""
+
+  if config.DustCoverMode ~= 0 then
+    openDustCover = string.format("m%i\n", config.DustCoverOpenMCode)
+    closeDustCover = string.format("m%i\n", config.DustCoverCloseMCode)
   end
 
-  --mc.mcCntlSetLastError(inst, "Reached the end")
+  -- IR signal
+  local irSignal = mc[string.format("OSIG_OUTPUT%i", config.DustCoverOutput)]
+  local irHandle = mc.mcSignalGetHandle(inst, irSignal)
+  local beamBroken = false
+  
+
+  local gCode = ""
+  gCode = gCode .. string.format("g%i g90\n", config.Units)
+  gCode = gCode .. "m5\n"
+  gCode = gCode .. "m9\n"
+  mc.mcCntlGcodeExecuteWait(inst, gCode)
+
+  -- Before Tool Change Hook
+  if config.BeforeToolChangeMCode > 0 then
+    -- TODO: Add macro hook
+  end
+
+  
+
+  
+
+  -- Unloading
+  -- No matter what, rise to safe clearance
+  mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+
+  -- Tool number validation, no negative numbers or tools greater than 255. Not sure where the cutoff should be for max tool.
+  -- TODO: Determine max tool number
+  if currentTool < 0 or currentTool > 255 then
+    --TODO: Abort with a feed hold
+    wx.wxMessageBox(string.format("Current Tool %i is invalid.\nTool change aborted.", currentTool), "Invalid Tool")
+    do return end
+    
+  -- Handle unloading tool 0.
+  elseif currentTool == 0 then  
+    -- If there is limited clearance, open the dust cover here, otherwise nothing to do.
+    if config.AdjustForLimitedClearance == true then
+      mc.mcCntlGcodeExecuteWait(inst, openDustCover)
+    end
+  
+  -- Handle unloading a tool out of magazine range
+  elseif currentTool > config.PocketCount then  -- Unload a tool that is out of magazine range.
+    mc.mcCntlGcodeExecuteWait(inst, goToManualXYCommand)
+
+    local result = wx.wxMessageBox(string.format("Manually unload tool %i before continuing.\n\n" ..
+      "Once you have unloaded tool %i, press \"OK\" to resume ATC execution.\nPressing \"Cancel\" " ..
+      "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+      "Tool Out of Range", 
+      wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+    if result == wx.wxCANCEL then
+      --TODO: Abort with a feed hold
+      wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+      do return end
+    end
+
+  -- Handle auto unload sequence
+  else
+    -- If there is limited clearance, open the dust cover here.
+    if config.AdjustForLimitedClearance == true then
+      mc.mcCntlGcodeExecuteWait(inst, openDustCover)
+    end
+
+    mc.mcCntlGcodeExecuteWait(inst, goToCurrentToolPocketXY)
+    mc.mcCntlGcodeExecuteWait(inst, openDustCover)
+    mc.mcCntlGcodeExecuteWait(inst, goToSpindleStart)
+    mc.mcCntlGcodeExecuteWait(inst, spinForUnloading)
+    mc.mcCntlGcodeExecuteWait(inst, engageSocket)
+    mc.mcCntlGcodeExecuteWait(inst, retreatFromEngagement)
+
+    -- Branch for tool recognition
+    if config.ToolRecognitionEnabled == false then
+      -- No tool recognition, prepare to load a tool.
+      mc.mcCntlGcodeExecuteWait(inst, stopSpindle)
+      mc.mcCntlGcodeExecuteWait(inst, goToZMoveToLoad)
+
+      -- Default behavior is to pause for user confirmation, if overriden do nothing and move on
+      if config.ToolRecognitionOverridden == false then
+        local result = wx.wxMessageBox(string.format("Confirm that tool %i properly unloaded before continuing.\n\n" ..
+          "Press \"OK\" to confirm and resume ATC execution.\nPressing \"Cancel\" " ..
+          "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+          "Confirm Unload", 
+          wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+        if result == wx.wxCANCEL then
+          --TODO: Abort with a feed hold
+          wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+          do return end
+        end
+      end
+    else
+      -- Perform tool recognition routinge for unloading
+      mc.mcCntlGcodeExecuteWait(inst, goToZZone1)
+      
+      if mc.mcSignalGetState(irHandle) == config.GetIRBeamBrokenState() then
+        beamBroken = true
+      else
+        beamBroken = false
+      end
+
+      if beamBroken == true then
+        -- First unload failure, try one more time
+        mc.mcCntlGcodeExecuteWait(inst, goToSpindleStart)
+        mc.mcCntlGcodeExecuteWait(inst, engageSocket)
+        mc.mcCntlGcodeExecuteWait(inst, retreatFromEngagement)
+        mc.mcCntlGcodeExecuteWait(inst, stopSpindle)
+        mc.mcCntlGcodeExecuteWait(inst, goToZZone1)
+
+        -- Check the state again
+        if mc.mcSignalGetState(irHandle) == config.GetIRBeamBrokenState() then
+          beamBroken = true
+        else
+          beamBroken = false
+        end
+
+        if beamBroken == true then
+          -- Second unload failure, trigger manual unloading
+          mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+          mc.mcCntlGcodeExecuteWait(inst, goToManualXYCommand)
+          
+          -- Message for failure and manual unloading
+          local result = wx.wxMessageBox(string.format("Tool %i failed to unload.\n\n" ..
+            "Manually unload tool %i before continuing.\n" ..
+            "Once you have unloaded tool %i, press \"OK\" to resume ATC execution.\nPressing \"Cancel\" " ..
+            "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+            "Unloading Failure", 
+            wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+          if result == wx.wxCANCEL then
+            --TODO: Abort with a feed hold
+            wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+            do return end
+          end
+        else
+          -- Second unload attempt success
+          mc.mcCntlGcodeExecuteWait(inst, goToZMoveToLoad)
+        end
+      else
+        -- First unload attempt success
+        mc.mcCntlGcodeExecuteWait(inst, stopSpindle)
+        mc.mcCntlGcodeExecuteWait(inst, goToZMoveToLoad)
+      end
+    end
+  end
+  -- If we made it here, we have tool 0.
+  mc.mcToolSetCurrent(inst, 0)
+  -- End Unloading
+
+  -- Loading
+  -- Tool number validation, no negative numbers or tools greater than 255. Not sure where the cutoff should be for max tool.
+  -- TODO: Determine max tool number
+  if selectedTool < 0 or selectedTool > 255 then
+    --TODO: Abort with a feed hold
+    wx.wxMessageBox(string.format("Selected Tool %i is invalid.\nTool change aborted.", selectedTool), "Invalid Tool")
+    do return end
+  end
+
+  if selectedTool == 0 then
+    -- Handle loading tool 0, nothing to do but go to safe clearance
+    mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+
+  elseif selectedTool > config.PocketCount then
+    -- Handle loading a tool out of magazine range
+    mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+    mc.mcCntlGcodeExecuteWait(inst, goToManualXYCommand)
+
+    local result = wx.wxMessageBox(string.format("Manually load tool %i before continuing.\n\n" ..
+      "Once you have loaded tool %i, press \"OK\" to resume ATC execution.\nPressing \"Cancel\" " ..
+      "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+      "Tool Out of Range", 
+      wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+    if result == wx.wxCANCEL then
+      --TODO: Abort with a feed hold
+      wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+      do return end
+    end
+
+  else
+    -- Handle loading a tool automatically
+
+    -- If there is limited clearance, ensure the dust cover is open in case we started with tool 0.
+    if config.AdjustForLimitedClearance == true then
+      mc.mcCntlGcodeExecuteWait(inst, openDustCover)
+    end
+
+    mc.mcCntlGcodeExecuteWait(inst, goToSelectedToolPocketXY)
+    mc.mcCntlGcodeExecuteWait(inst, openDustCover) -- in case we started with tool 0
+    mc.mcCntlGcodeExecuteWait(inst, goToSpindleStart)
+    mc.mcCntlGcodeExecuteWait(inst, spinForLoading)
+    mc.mcCntlGcodeExecuteWait(inst, engageSocket)
+    mc.mcCntlGcodeExecuteWait(inst, retreatFromEngagement)
+    mc.mcCntlGcodeExecuteWait(inst, engageSocket)
+    mc.mcCntlGcodeExecuteWait(inst, retreatFromEngagement)
+    mc.mcCntlGcodeExecuteWait(inst, stopSpindle)
+
+    -- Branch for tool recognition
+    if config.ToolRecognitionEnabled == false then
+      -- No tool recognition, prepare to perform tool touch off.
+      mc.mcCntlGcodeExecuteWait(inst, goToZMoveToProbe)
+
+      -- Default behavior is to pause for user confirmation, if overriden do nothing and move on
+      if config.ToolRecognitionOverridden == false then
+        local result = wx.wxMessageBox(string.format("Confirm that tool %i properly loaded before continuing.\n\n" ..
+          "Press \"OK\" to confirm and resume ATC execution.\nPressing \"Cancel\" " ..
+          "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+          "Confirm Load", 
+          wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+        if result == wx.wxCANCEL then
+          --TODO: Abort with a feed hold
+          wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+          do return end
+        end
+      end
+    else
+      -- Perform tool recognition routinge for unloading
+      mc.mcCntlGcodeExecuteWait(inst, goToZZone1)
+      
+      if mc.mcSignalGetState(irHandle) == config.GetIRBeamBrokenState() then
+        beamBroken = true
+      else
+        beamBroken = false
+      end
+
+      if beamBroken == false then
+        --Loading failed
+
+        -- Go to manual location
+        mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+        mc.mcCntlGcodeExecuteWait(inst, goToManualXYCommand)
+
+        -- Message for failure and manual unloading
+        local result = wx.wxMessageBox(string.format("Tool %i failed to properly load.\n\n" ..
+          "Manually load tool %i before continuing.\n" ..
+          "Once you have loaded tool %i, press \"OK\" to resume ATC execution.\nPressing \"Cancel\" " ..
+          "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+          "Loading Zone1 Failure", 
+          wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+        if result == wx.wxCANCEL then
+          --TODO: Abort with a feed hold
+          wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+          do return end
+        end
+      else
+        -- Perform Zone 2 check
+        mc.mcCntlGcodeExecuteWait(inst, goToZZone2)
+
+        if mc.mcSignalGetState(irHandle) == config.GetIRBeamBrokenState() then
+          beamBroken = true
+        else
+          beamBroken = false
+        end
+
+        if beamBroken == true then
+          --Loading failed
+
+          -- Go to manual location
+          mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+          mc.mcCntlGcodeExecuteWait(inst, goToManualXYCommand)
+
+          -- Message for failure and manual unloading
+          local result = wx.wxMessageBox(string.format("Tool %i failed to properly load.\n\n" ..
+            "Manually load tool %i before continuing.\n" ..
+            "Once you have loaded tool %i, press \"OK\" to resume ATC execution.\nPressing \"Cancel\" " ..
+            "or closing this window will abort the tool change.", currentTool, wx.wxCANCEL), 
+            "Loading Zone2 Failure", 
+            wx.wxOK | wx.wxCANCEL | wx.wxCENTRE)
+
+          if result == wx.wxCANCEL then
+            --TODO: Abort with a feed hold
+            wx.wxMessageBox("Tool change aborted.", "Tool Change Aborted")
+            do return end
+          end
+        end
+      end
+    end
+
+  -- If we made it here, our tool selection is loaded.
+  -- TODO: Should we disable G43 here?
+  mc.mcToolSetCurrent(inst, selectedTool)
+  end
+  -- End Loading
+
+  -- Tool Touch Off - Call only if enabled and we have a tool
+  if config.ToolTouchOffEnabled == true and selectedTool ~= 0 then
+    mc.mcCntlGcodeExecuteWait(inst, executeToolTouchOff)
+  end
+
+  -- Finish up
+  mc.mcCntlGcodeExecuteWait(inst, goToSafeClearance)
+
+  if config.AdjustForLimitedClearance == false then
+    mc.mcCntlGcodeExecuteWait(inst, closeDustCover)
+  end
+
+  mc.mcCntlGcodeExecuteWait(inst, goToInitialXY)
+  mc.mcCntlGcodeExecuteWait(inst, closeDustCover)
+
+  --TODO: Call post tool change hook.
 end
 
 if (mc.mcInEditor() == 1) then
