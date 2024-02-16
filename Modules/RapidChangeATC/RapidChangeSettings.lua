@@ -41,7 +41,7 @@ local function getValue(key)
 end
 
 -- Setting creation
-local function create_setting(key, label, description, default, options, storageType)
+local function createSetting(key, label, description, default, options, storageType)
   RapidChangeSettings[key] = {
     label = label,
     description = description,
@@ -53,18 +53,18 @@ local function create_setting(key, label, description, default, options, storage
   RapidChangeSettings[key].value = getValue(key)
 end
 
-local function create_setting_double(key, label, description, default)
+local function createSettingDouble(key, label, description, default)
   if default == nil then default = 0.000 end
-  create_setting(key, label, description, default, {}, DOUBLE_SETTING)
+  createSetting(key, label, description, default, {}, DOUBLE_SETTING)
 end
 
-local function create_setting_int(key, label, description, default)
+local function createSettingInt(key, label, description, default)
   if default == nil then default = 0 end
-  create_setting(key, label, description, default, {}, INT_SETTING)
+  createSetting(key, label, description, default, {}, INT_SETTING)
 end
 
 local function createSettingOption(key, label, description, options)
-  create_setting(key, label, description, options[1], options, INT_SETTING)
+  createSetting(key, label, description, options[1], options, INT_SETTING)
 end
 
 
@@ -72,9 +72,9 @@ end
 createSettingOption("Units", "Units", "Units for this configuration.", UNIT_OPTIONS)
 createSettingOption("Alignment", "Alignment", "Axis on which the magazine is aligned.", ALIGNMENT_OPTIONS)
 createSettingOption("Direction", "Direction", "Direction of travel from Pocket 1 to Pocket 2.", DIRECTION_OPTIONS)
-create_setting_double("ZMoveToLoad", "Z Move To Load", "Z Position to rise to after unloading a tool, before moving to the pocket for loading.")
-create_setting_double("ZMoveToProbe", "Z Move To Probe", "Z Position to rise to after loading a tool, before moving to the tool setter for probing.")
-create_setting_double("ZSafeClearance", "Z Safe Clearance", "Z Position for the safe clearance of all obstacles.")
+createSettingDouble("ZMoveToLoad", "Z Move To Load", "Z Position to rise to after unloading a tool, before moving to the pocket for loading.")
+createSettingDouble("ZMoveToProbe", "Z Move To Probe", "Z Position to rise to after loading a tool, before moving to the tool setter for probing.")
+createSettingDouble("ZSafeClearance", "Z Safe Clearance", "Z Position for the safe clearance of all obstacles.")
 
 --Public function for updating a setting's value
 function RapidChangeSettings.SetValue(key, value)
