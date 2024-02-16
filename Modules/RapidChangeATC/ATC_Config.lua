@@ -45,7 +45,6 @@ DustCoverMode = {
 --[[
 Settings
 Edit the values in this section to configure your RapidChange ATC Magazine for ATC operations.
-Information for 
 --]]
 
 -- Tool Change Settings

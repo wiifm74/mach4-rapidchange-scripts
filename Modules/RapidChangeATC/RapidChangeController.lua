@@ -1,6 +1,8 @@
 local RapidChangeController = {}
 
-function mcMacroFunctions.RapidToMachineCoordinates(XPos,YPos,ZPos)
+local inst = mc.mcGetInstance()
+
+function RapidChangeController.RapidToMachineCoordinates(XPos,YPos,ZPos)
 	
 	local rc
 	local GCode = ""
