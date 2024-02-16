@@ -1,0 +1,11 @@
+# Ignore everything first
+*
+
+# Start allowing
+!.gitignore
+
+!Modules/RapidChangeATC/*
+!Screens/*
+!Profiles/RapidChangeATC/*
+!Profiles/RapidChangeATC/Macros/*
+!Wizards/RapidChange*.mcs
