@@ -37,7 +37,7 @@ package.cpath = cpaths .. package.cpath --Do this only after you have built the 
 
 --RapidChangeATC constants
 package.loaded.RapidChangeConstants = nil
-rcConst = require "RapidChangeConstants"
+k = require "RapidChangeConstants"
 
 --RapidChangeATC module
 package.loaded.RapidChangeController = nil
@@ -47,7 +47,4 @@ rcATC = require "RapidChangeController"
 package.loaded.RapidChangeSettings = nil
 rcSettings = require "RapidChangeSettings"
 
---RapidChangeATC user configuration TEMPORARY
-package.loaded.RapidChangeUserConfig = nil
-rcConfig = require "RapidChangeUserConfig"
-rcConfig.load()
+
