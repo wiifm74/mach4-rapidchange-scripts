@@ -73,4 +73,58 @@ RapidChangeConstants.C_AXIS = 5
 RapidChangeConstants.COVER_CONTROL_AXIS = 0
 RapidChangeConstants.COVER_CONTROL_OUTPUT = 1
 
+--Setting Keys
+--Tool change
+RapidChangeConstants.UNITS = "Units"
+RapidChangeConstants.ALIGNMENT = "Alignment"
+RapidChangeConstants.POCKET_COUNT = "PocketCount"
+RapidChangeConstants.POCKET_OFFSET = "PocketOffset"
+RapidChangeConstants.X_POCKET_1 = "XPocket1"
+RapidChangeConstants.Y_POCKET_1 = "YPocket1"
+RapidChangeConstants.X_MANUAL = "XManual"
+RapidChangeConstants.Y_MANUAL = "YManual"
+RapidChangeConstants.Z_ENGAGE = "ZEngage"
+RapidChangeConstants.Z_MOVE_TO_LOAD = "ZMoveToLoad"
+RapidChangeConstants.Z_MOVE_TO_PROBE = "ZMoveToProbe"
+RapidChangeConstants.Z_SAFE_CLEARANCE = "ZSafeClearance"
+RapidChangeConstants.LOAD_RPM = "LoadRPM"
+RapidChangeConstants.UNLOAD_RPM = "UnloadRPM"
+RapidChangeConstants.ENGAGE_FEED_RATE = "EngageFeedRate"
+
+--Touch off
+RapidChangeConstants.TOUCH_OFF_ENABLED = "TouchOffEnabled"
+RapidChangeConstants.TOUCH_OFF_M_CODE = "TouchOffMCode"
+RapidChangeConstants.X_TOOL_SETTER = "XToolSetter"
+RapidChangeConstants.Y_TOOL_SETTER = "YToolSetter"
+RapidChangeConstants.Z_SEEK_START = "ZSeekStart"
+RapidChangeConstants.SEEK_MAX_DISTANCE = "SeekMaxDistance"
+RapidChangeConstants.SEEK_FEED_RATE = "SeekFeedRate"
+RapidChangeConstants.SEEK_RETREAT = "SeekRetreat"
+RapidChangeConstants.SET_FEED_RATE = "SetFeedRate"
+
+--Tool recognition
+RapidChangeConstants.TOOL_REC_ENABLED = "ToolRecognitionEnabled"
+RapidChangeConstants.TOOL_REC_OVERRIDE = "ToolRecognitionOverride"
+RapidChangeConstants.IR_PORT = "IRPort"
+RapidChangeConstants.IR_PIN = "IRPin"
+RapidChangeConstants.IR_ACTIVE_BROKEN = "IRActiveBroken"
+RapidChangeConstants.Z_ZONE_1 = "ZZone1"
+RapidChangeConstants.Z_ZONE_2 = "ZZone2"
+
+--Dust Cover
+RapidChangeConstants.COVER_ENABLED = "DustCoverEnabled"
+RapidChangeConstants.COVER_CONTROL = "DustCoverControl"
+RapidChangeConstants.COVER_AXIS = "DustCoverAxis"
+RapidChangeConstants.COVER_OPEN_POS = "DustCoverOpenPos"
+RapidChangeConstants.COVER_CLOSED_POS = "DustCoverClosedPos"
+RapidChangeConstants.COVER_PORT = "DustCoverPort"
+RapidChangeConstants.COVER_PIN = "DustCoverPin"
+RapidChangeConstants.COVER_DWELL = "DustCoverDwell"
+RapidChangeConstants.COVER_OPEN_M_CODE = "DustCoverOpenMCode"
+RapidChangeConstants.COVER_CLOSE_M_CODE = "DustCoverCloseMCode"
+
+--Hooks
+RapidChangeConstants.BEFORE_CHANGE_M_CODE = "BeforeChangeMCode"
+RapidChangeConstants.AFTER_CHANGE_M_CODE = "AfterChangeMCode"
+
 return RapidChangeConstants
