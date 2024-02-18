@@ -23,7 +23,7 @@ local function createOptionDefinition(key, label, description, options)
 end
 
 --Setting definitions defined in display order for UI looping
-local definitions = {
+Definitions = {
   --Tool Change
   createOptionDefinition(k.UNITS, "Units", "Units for this configuration.", k.UNIT_OPTIONS),
   createOptionDefinition(k.ALIGNMENT, "Alignment", "Axis on which the magazine is aligned.", k.ALIGNMENT_OPTIONS),
@@ -131,18 +131,20 @@ end
 local function buildDefinitionMap()
   local map = {}
 
-  for _, v in ipairs(definitions) do
-    map[v.key] = v
+  for _, v in ipairs(Definitions) do
+    if v.key ~= nil then
+      map[v.key] = v
+    end
   end
 
   return map
 end
 
-local definitionMap = buildDefinitionMap()
+DefinitionMap = buildDefinitionMap()
 
 --Retrieve a setting's value
 function RapidChangeSettings.GetValue(key)
-  local definition = definitionMap[key]
+  local definition = DefinitionMap[key]
 
   if definition.settingType == k.DISTANCE_SETTING or
     definition.settingType == k.UDISTANCE_SETTING or
@@ -160,7 +162,7 @@ end
 function RapidChangeSettings.GetUISettingsList()
   local settings = {}
 
-  for i, v in ipairs(definitions) do
+  for i, v in ipairs(Definitions) do
     settings[i] = createUISetting(v)
   end
 
@@ -173,10 +175,10 @@ end
 --The UI can fetch the settings list and create whichever appropriate controls it chooses and let the
 --settings worry about what to do with them. Indicate the control type used for the setting from the defined
 --control type constants when registering a control.
-local registeredControls = {}
+RegisteredControls = {}
 
 function RapidChangeSettings.RegisterUIControl(key, control, controlType)
-  registeredControls[key] = {
+  RegisteredControls[key] = {
     control = control,
     controlType = controlType
   }
@@ -184,7 +186,7 @@ end
 
 function RapidChangeSettings.UnregisterUIControl(key)
   --Is this enough for memory management?
-  registeredControls[key] = nil
+  RegisteredControls[key] = nil
 end
 
 --Call from UI to save user input

@@ -47,4 +47,8 @@ rcATC = require "RapidChangeController"
 package.loaded.RapidChangeSettings = nil
 rcSettings = require "RapidChangeSettings"
 
+--GCode Builder
+package.loaded.GcodeExecuter = nil
+code = require "GcodeExecuter"
+
 
