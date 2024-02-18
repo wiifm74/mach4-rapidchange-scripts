@@ -1,9 +1,9 @@
 local RapidChangeController = {}
 
-
 local inst = mc.mcGetInstance()
 
 local function GcodeExecuteWait(formattedGcode, ...)
+	local inst = mc.mcGetInstance()
 	local gcode = string.format(formattedGcode, table.unpack(arg))
 	
 	local rc = mc.mcCntlGcodeExecuteWait(inst, gcode)
@@ -16,8 +16,10 @@ function RapidChangeController.RapidToMachineCoordinates(XPos,YPos,ZPos)
 end
 
 function RapidChangeController.RapidToMachZ(zPos)
-	local gcode = code.Line(code.RapidMach, code.Z(zPos))
-	return mc.mcCntlGcodeExecuteWait(inst, gcode)
+	--local gcode = code.Line({ code.RapidMach, code.Z(zPos) })
+	--wx.wxMessageBox(gcode)
+	local rc = mc.mcCntlGcodeExecuteWait(inst, "g90g53g0z10\n")
+	return rc
 end
 
 function RapidChangeController.DoErrorTest()

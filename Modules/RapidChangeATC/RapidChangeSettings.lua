@@ -23,7 +23,7 @@ local function createOptionDefinition(key, label, description, options)
 end
 
 --Setting definitions defined in display order for UI looping
-Definitions = {
+local definitions = {
   --Tool Change
   createOptionDefinition(k.UNITS, "Units", "Units for this configuration.", k.UNIT_OPTIONS),
   createOptionDefinition(k.ALIGNMENT, "Alignment", "Axis on which the magazine is aligned.", k.ALIGNMENT_OPTIONS),
@@ -131,7 +131,7 @@ end
 local function buildDefinitionMap()
   local map = {}
 
-  for _, v in ipairs(Definitions) do
+  for _, v in ipairs(definitions) do
     if v.key ~= nil then
       map[v.key] = v
     end
@@ -140,11 +140,11 @@ local function buildDefinitionMap()
   return map
 end
 
-DefinitionMap = buildDefinitionMap()
+local definitionMap = buildDefinitionMap()
 
 --Retrieve a setting's value
 function RapidChangeSettings.GetValue(key)
-  local definition = DefinitionMap[key]
+  local definition = definitionMap[key]
 
   if definition.settingType == k.DISTANCE_SETTING or
     definition.settingType == k.UDISTANCE_SETTING or
@@ -162,7 +162,7 @@ end
 function RapidChangeSettings.GetUISettingsList()
   local settings = {}
 
-  for i, v in ipairs(Definitions) do
+  for i, v in ipairs(definitions) do
     settings[i] = createUISetting(v)
   end
 
@@ -175,10 +175,10 @@ end
 --The UI can fetch the settings list and create whichever appropriate controls it chooses and let the
 --settings worry about what to do with them. Indicate the control type used for the setting from the defined
 --control type constants when registering a control.
-RegisteredControls = {}
+local registeredControls = {}
 
 function RapidChangeSettings.RegisterUIControl(key, control, controlType)
-  RegisteredControls[key] = {
+  registeredControls[key] = {
     control = control,
     controlType = controlType
   }
@@ -186,7 +186,7 @@ end
 
 function RapidChangeSettings.UnregisterUIControl(key)
   --Is this enough for memory management?
-  RegisteredControls[key] = nil
+  registeredControls[key] = nil
 end
 
 --Call from UI to save user input
