@@ -110,14 +110,12 @@ local function getProbeMachPosZ()
 end
 
 local function getSignalHandle(id, prefix)
-	local signalKey
-	if prefix == nil then
-		signalKey = id
-	else
-		signalKey = string.format(prefix .. "%i", id)
+	if prefix ~= nil then
+		local signalKey = string.format(prefix .. "%i", id)
+		id = mc[signalKey]
 	end
 
-	local hsig, rc = mc.mcSignalGetHandle(inst, mc[signalKey])
+	local hsig, rc = mc.mcSignalGetHandle(inst, id)
 	rcErrors.HandleMachAPI(rc, "Error getting signal handle.")
 	return hsig
 end
@@ -130,7 +128,7 @@ local function getSignalState(id, prefix)
 end
 
 local function setSignalState(outputNum, state)
-	local hsig = getSignalHandle(outputNum, "ISIG_OUTPUT")
+	local hsig = getSignalHandle(outputNum, "OSIG_OUTPUT")
 	local rc = mc.mcSignalSetState(hsig, state)
 	rcErrors.HandleMachAPI(rc, "Error setting signal state.")
 end
@@ -208,7 +206,7 @@ function RapidChangeController.GetInputState(inputNum)
 end
 
 function RapidChangeController.GetOutputState(outputNum)
-	return getSignalState(outputNum, "ISIG_OUTPUT")
+	return getSignalState(outputNum, "OSIG_OUTPUT")
 end
 
 function RapidChangeController.GetToolChangeState()

@@ -22,7 +22,7 @@ rcSettings.SetValue(k.SETTING_NAME, k.OPTION_TWO)
 
 local RapidChangeUserConfig = {}
 
-function RapidChangeUserConfig.load()
+function RapidChangeUserConfig.Load()
   -- Tool Change Settings
 
   -- Units for your configuration. Configure in your default units.

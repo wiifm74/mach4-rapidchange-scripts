@@ -51,5 +51,10 @@ rcSettings = require "RapidChangeSettings"
 package.loaded.RapidChangeErrorHandler = nil
 rcErrors = require "RapidChangeErrorHandler"
 
+--RapidChangeATC user config file
+package.loaded.RapidChangeUserConfig = nil
+rcConfig = require "RapidChangeUserConfig"
+rcConfig.Load()
+
 
 

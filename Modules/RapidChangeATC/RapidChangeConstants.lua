@@ -100,12 +100,12 @@ RapidChangeConstants.POSITIVE = 1
 RapidChangeConstants.NEGATIVE = -1
 
 --Axes
-RapidChangeConstants.X_AXIS = 0
-RapidChangeConstants.Y_AXIS = 1
-RapidChangeConstants.Z_AXIS = 2
-RapidChangeConstants.A_AXIS = 3
-RapidChangeConstants.B_AXIS = 4
-RapidChangeConstants.C_AXIS = 5
+RapidChangeConstants.X_AXIS = mc.X_AXIS
+RapidChangeConstants.Y_AXIS = mc.Y_AXIS
+RapidChangeConstants.Z_AXIS = mc.Z_AXIS
+RapidChangeConstants.A_AXIS = mc.A_AXIS
+RapidChangeConstants.B_AXIS = mc.B_AXIS
+RapidChangeConstants.C_AXIS = mc.C_AXIS
 
 --Dust Cover
 RapidChangeConstants.COVER_CONTROL_AXIS = 0

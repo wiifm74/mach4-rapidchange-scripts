@@ -7,7 +7,7 @@ local RC_SECTION = "RapidChangeATC"
 
 --Setting definition creation helpers
 local function createDefinition(key, label, description, settingType, defaultValue, options)
-  defaultValue = defaultValue or {}
+  defaultValue = defaultValue or 0
   options = options or {}
 
   return {
@@ -21,7 +21,9 @@ local function createDefinition(key, label, description, settingType, defaultVal
 end
 
 local function createOptionDefinition(key, label, description, options)
-  return createDefinition(key, label, description, k.OPTION_SETTING, options[1], options)
+  local value = options[1].value
+  --wx.wxMessageBox(string.format("Value: %i", value))
+  return createDefinition(key, label, description, k.OPTION_SETTING, value, options)
 end
 
 --Setting definitions defined in display order for UI looping
