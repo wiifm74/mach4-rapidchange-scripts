@@ -9,8 +9,8 @@ RapidChangeConstants.MCODE_SETTING = 4
 RapidChangeConstants.OPTION_SETTING = 5
 RapidChangeConstants.SWITCH_SETTING = 6
 RapidChangeConstants.COUNT_SETTING = 7
-RapidChangeConstants.PORT_SETTING = 8
-RapidChangeConstants.PIN_SETTING = 9
+-- RapidChangeConstants.PORT_SETTING = 8
+-- RapidChangeConstants.PIN_SETTING = 9
 RapidChangeConstants.DWELL_SETTING = 10
 
 --UI Control Types
@@ -44,20 +44,58 @@ RapidChangeConstants.COVER_CONTROL_OPTIONS = {
   { value = RapidChangeConstants.COVER_CONTROL_OUTPUT, label = "Output" },
 }
 
+RapidChangeConstants.IR_ACTIVE_STATE_OPTIONS = {
+  { value = RapidChangeConstants.ACTIVE_BROKEN, label = "Active Broken" },
+  { value = RapidChangeConstants.ACTIVE_CLEAR, label = "Active Clear" },
+}
+
+RapidChangeConstants.PROBE_OPTIONS = {
+  { value = RapidChangeConstants.ACTIVE_BROKEN, label = "Active Broken" },
+  { value = RapidChangeConstants.ACTIVE_CLEAR, label = "Active Clear" },
+}
+
 RapidChangeConstants.UNIT_OPTIONS = {
   { value = RapidChangeConstants.MILLIMETERS, label = "Millimeters" },
   { value = RapidChangeConstants.INCHES, label = "Inches" },
 }
 
+-- Signal Options
+local function buildSignalOptions(isInput)
+  local options = {}
+
+  local prefix
+  if isInput then
+    prefix = "Input #"
+  else
+    prefix = "Output #"
+  end
+
+  for i = 0, 63 do
+    options[i + 1] = {
+      value = i,
+      label = prefix .. i
+    }
+  end
+
+  return options
+end
+
+RapidChangeConstants.INPUT_SIGNAL_OPTIONS = buildSignalOptions(true)
+RapidChangeConstants.OUTPUT_SIGNAL_OPTIONS = buildSignalOptions(false)
+
+-- Signal State
+RapidChangeConstants.INACTIVE = 0
+RapidChangeConstants.ACTIVE = 1
+
 -- Switch Setting state
 RapidChangeConstants.DISABLED = 0
 RapidChangeConstants.ENABLED = 1
 
---Units
+-- Units
 RapidChangeConstants.INCHES = 20
 RapidChangeConstants.MILLIMETERS = 21
 
---Directions
+-- Directions
 RapidChangeConstants.POSITIVE = 1
 RapidChangeConstants.NEGATIVE = -1
 
@@ -73,10 +111,21 @@ RapidChangeConstants.C_AXIS = 5
 RapidChangeConstants.COVER_CONTROL_AXIS = 0
 RapidChangeConstants.COVER_CONTROL_OUTPUT = 1
 
+--IR State
+RapidChangeConstants.ACTIVE_BROKEN = 0
+RapidChangeConstants.ACTIVE_CLEAR = 1
+
+--Probes
+RapidChangeConstants.PROBE = 0
+RapidChangeConstants.PROBE_1 = 1
+RapidChangeConstants.PROBE_2 = 2
+RapidChangeConstants.PROBE_3 = 3
+
 --Setting Keys
 --Tool change
 RapidChangeConstants.UNITS = "Units"
 RapidChangeConstants.ALIGNMENT = "Alignment"
+RapidChangeConstants.DIRECTION = "Direction"
 RapidChangeConstants.POCKET_COUNT = "PocketCount"
 RapidChangeConstants.POCKET_OFFSET = "PocketOffset"
 RapidChangeConstants.X_POCKET_1 = "XPocket1"
@@ -105,9 +154,10 @@ RapidChangeConstants.SET_FEED_RATE = "SetFeedRate"
 --Tool recognition
 RapidChangeConstants.TOOL_REC_ENABLED = "ToolRecognitionEnabled"
 RapidChangeConstants.TOOL_REC_OVERRIDE = "ToolRecognitionOverride"
-RapidChangeConstants.IR_PORT = "IRPort"
-RapidChangeConstants.IR_PIN = "IRPin"
-RapidChangeConstants.IR_ACTIVE_BROKEN = "IRActiveBroken"
+-- RapidChangeConstants.IR_PORT = "IRPort"
+-- RapidChangeConstants.IR_PIN = "IRPin"
+RapidChangeConstants.IR_INPUT = "IRInput"
+RapidChangeConstants.IR_ACTIVE_STATE = "IRActiveState"
 RapidChangeConstants.Z_ZONE_1 = "ZZone1"
 RapidChangeConstants.Z_ZONE_2 = "ZZone2"
 
@@ -117,8 +167,9 @@ RapidChangeConstants.COVER_CONTROL = "DustCoverControl"
 RapidChangeConstants.COVER_AXIS = "DustCoverAxis"
 RapidChangeConstants.COVER_OPEN_POS = "DustCoverOpenPos"
 RapidChangeConstants.COVER_CLOSED_POS = "DustCoverClosedPos"
-RapidChangeConstants.COVER_PORT = "DustCoverPort"
-RapidChangeConstants.COVER_PIN = "DustCoverPin"
+-- RapidChangeConstants.COVER_PORT = "DustCoverPort"
+-- RapidChangeConstants.COVER_PIN = "DustCoverPin"
+RapidChangeConstants.COVER_OUTPUT = "DustCoverOutput"
 RapidChangeConstants.COVER_DWELL = "DustCoverDwell"
 RapidChangeConstants.COVER_OPEN_M_CODE = "DustCoverOpenMCode"
 RapidChangeConstants.COVER_CLOSE_M_CODE = "DustCoverCloseMCode"

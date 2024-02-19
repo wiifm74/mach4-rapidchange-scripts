@@ -1,5 +1,10 @@
 function m109()
   local inst = mc.mcGetInstance()
+  --If the dust cover is disabled, nothing to do.
+  -- local enabled = rcSettings.GetValue(k.COVER_ENABLED)
+  -- if enabled ~= k.ENABLED then
+  --   return
+  -- end
 
   package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
   if (package.loaded.ATC_Config == nil) then

@@ -1,10 +1,26 @@
 function m108()
   local inst = mc.mcGetInstance()
-
+  
   package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
   if (package.loaded.ATC_Config == nil) then
     config = require "ATC_Config"
   end
+
+  -- local controlMode = rcSettings.GetValue(k.COVER_CONTROL)
+
+  -- local function openAxis()
+    
+  -- end
+
+  -- local function openOutput()
+    
+  -- end
+
+  -- if controlMode == k.COVER_CONTROL_AXIS then
+  --   openAxis()
+  -- else
+  --   openOutput()
+  -- end
 
   if config.DustCoverMode == 1 then
     local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003))
