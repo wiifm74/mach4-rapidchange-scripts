@@ -13,6 +13,8 @@ function RapidChangeErrorHandler.HandleMachAPI(rc, message, title)
     message = "Invalid Mach4 instance.\n" .. message
   elseif rc == mc.MERROR_INVALID_ARG then
     message = "Invalid argument.\n" .. message
+  elseif rc == mc.MERROR_INVALID_STATE then
+    message = "Invalid state.\n" .. message
   elseif rc == mc.MERROR_NOT_NOW then
     message = "Operation could not be completed at this time.\n" .. message
   elseif rc == mc.MERROR_NOT_COMPILED then
@@ -21,8 +23,10 @@ function RapidChangeErrorHandler.HandleMachAPI(rc, message, title)
     message = "Signal not found.\n" .. message
   elseif rc == mc.MERROR_AXIS_NOT_FOUND then
     message = "Axis not found.\n" .. message
-	else
-		message = "Unknown error.\n" .. message
+	elseif rc == mc.MERROR_IPC_NOT_READY then
+		message = "Interprocess Communication substem was not ready.\n" .. message
+  else
+    message = string.format("Unknown error.\nCode: %i\n", rc) .. message
   end
 
   wx.wxMessageBox(message, title)

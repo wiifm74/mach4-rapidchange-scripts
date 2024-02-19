@@ -92,21 +92,29 @@ local function executeLines(...)
   rcErrors.HandleMachAPI(rc, string.format("Gcode:\n%s", block), "Gcode Execution Error")
 end
 
+local function hold(reason)
+	local rc = mc.mcFileHoldAquire(inst, reason, 0)
+	rcErrors.HandleMachAPI(rc, "Error on file hold.")
+end
+
 local function getAxisPos(axis, useMach)
 	local pos, rc
-	if useMach then
+	
+	if useMach == true then
 		pos, rc = mc.mcAxisGetMachinePos(inst, axis)
 	else
 		pos, rc = mc.mcAxisGetPos(inst, axis)
 	end
+
 	rcErrors.HandleMachAPI(rc, "Error retrieving axis position.")
 
 	return pos
 end
 
 local function getProbeMachPosZ()
-	local pos, rc = mc.mcAxisGetProbePos(inst, mc.Z_AXIS, 1)
+	local pos, rc = mc.mcAxisGetProbePos(inst, k.Z_AXIS, 1)
 	rcErrors.HandleMachAPI(rc, "Error retrieving Z probe trigger position.")
+	return pos
 end
 
 local function getSignalHandle(id, prefix)
@@ -269,14 +277,19 @@ function RapidChangeController.LinearToMachCoords_Z_Z(zPos1, zPos2, feed)
 end
 
 function RapidChangeController.ProbeDown(maxDistance, feed)
-	if maxDistance < 0 then 
+	if maxDistance < 0 then
 		maxDistance = maxDistance * -1
 	end
 
-	local currentZPos = getAxisPos(mc.Z_AXIS)
+	local currentZPos = getAxisPos(k.Z_AXIS, false)
 	local targetZPos = currentZPos - maxDistance
 
 	executeLines(line(PROBE, z(targetZPos), f(feed)))
+	
+	local didstrike, rc = mc.mcCntlProbeGetStrikeStatus(inst)
+	rcErrors.HandleMachAPI(rc, "Error checking probe trigger.")
+	
+	return didstrike
 end
 
 function RapidChangeController.RapidToMachCoord(axis, pos)

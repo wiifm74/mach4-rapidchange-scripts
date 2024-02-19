@@ -91,6 +91,10 @@ RapidChangeConstants.ACTIVE = 1
 RapidChangeConstants.DISABLED = 0
 RapidChangeConstants.ENABLED = 1
 
+-- True/False
+RapidChangeConstants.FALSE = 0
+RapidChangeConstants.TRUE = 1
+
 -- Units
 RapidChangeConstants.INCHES = 20
 RapidChangeConstants.MILLIMETERS = 21

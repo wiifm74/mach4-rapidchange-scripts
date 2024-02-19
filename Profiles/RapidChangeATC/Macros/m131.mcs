@@ -1,80 +1,124 @@
 function m131()
-  local inst = mc.mcGetInstance()
-  local currentTool = math.tointeger(mc.mcToolGetCurrent(inst))
-
+  --Get current tool, if we don't have a tool then exit
+  --TODO: Send a message?
+  local currentTool = rcATC.GetCurrentTool()
   if currentTool == 0 then
     return
   end
 
-  package.path = wx.wxGetCwd() .. "\\Modules\\RapidChangeATC\\?.lua;"
-  if (package.loaded.ATC_Config == nil) then
-    config = require "ATC_Config"
-  end
-  
- 
-  local initAbsMode = math.tointeger(mc.mcCntlGetPoundVar(inst, 4003));
-  local initUnits = math.tointeger(mc.mcCntlGetPoundVar(inst, 4006));
+  -- Get units and zSafeClearance, used in noToolChange and in touch off routine
+  local userUnits = rcSettings.GetValue(k.UNITS)
+  local zSafeClearance = rcSettings.GetValue(k.Z_SAFE_CLEARANCE)
 
+  --Create setup, teardown, and dust cover controls if not called from m6
+  local function setup_noToolChange()
+    --Record units
+    rcATC.RecordUnits()
 
-  local gCode = ""
-  gCode = gCode .. string.format("g%i g90 \n", config.Units)
-  gCode = gCode .. "m5 \n"
-  gCode = gCode .. "m9 \n"
-  gCode = gCode .. "g49 \n"
-  rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
-  
-  if(rc==mc.MERROR_NOT_NOW) then
-     wx.wxMessageBox(inst,"Didn't complete mode initialization correctly")
-  do return end
-  end
-  
-  
-  local currentMachZ = mc.mcCntlGetPoundVar(inst, 5023)
-  local currentWorkZ = mc.mcCntlGetPoundVar(inst, 5043)
-  local machToWorkOffset = currentMachZ - currentWorkZ
-  local zSeekTargetWork = config.ZSeekTarget - machToWorkOffset
+    --Set modal states
+    rcATC.SpinStop()
+    rcATC.CoolantStop()
+    rcATC.CancelTLO()
+    rcATC.SetUnits(userUnits)
 
-  gCode = ""
-
-  if (currentMachZ - 0.001) < config.ZMoveToProbe then
-    gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZMoveToProbe)
+    --Rise to safe clearance because we could be anywhere
+    rcATC.RapidToMachCoord_Z(zSafeClearance)
   end
 
-  gCode = gCode .. string.format("g53 g0 x%.3f y%.3f \n", config.XToolSetter, config.YToolSetter)
-  gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZSeekStart)
-
-  gCode = gCode .. string.format("g31 z%.3f f%.1f \n", zSeekTargetWork, config.SeekFeedrate)
-  gCode = gCode .. string.format("g91 g0 z%.3f \n", config.SeekRetreat)
-  gCode = gCode .. string.format("g90 g31 z%.3f f%.1f \n", zSeekTargetWork, config.SetFeedrate)
-  gCode = gCode .. string.format("g53 g0 z%.3f \n", config.ZSafeClearance)
-  local rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
-
-  if(rc==mc.MERROR_NOT_NOW) then
-       wx.wxMessageBox(inst,"Didn't complete probe sequence correctly")
-  do return end
+  local function teardown_noToolChange()
+    rcATC.RestoreUnits()
   end
 
-
-  local zTrigger = mc.mcCntlGetPoundVar(inst, 5073)
-  mc.mcCntlSetLastError(inst, string.format("Debug ZTrigger: %.3f", zTrigger))
-  mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool, zTrigger)
-
-  gCode = ""
-  --***Commented the below line out temporarily until I can figure out what the AVID
-  --***touchplate routine is doing.  It wants to return 
-  --***to the tool offset plus the g54 value which of course is no possible
-  --gCode = string.format("g43 H%i \n", currentTool)
-  gCode = gCode .. string.format("g%i g%i \n", initAbsMode, initUnits)
-  rc = mc.mcCntlGcodeExecuteWait(inst, gCode)
-  
-  if(rc==mc.MERROR_NOT_NOW) then
-       wx.wxMessageBox(inst,"Didn't execute mode restoration correctly")
-  do return end
+  local function openCover_noToolChange()
+    local openMCode = rcSettings.GetValue(k.COVER_OPEN_M_CODE)
+    rcATC.ExecuteMCode(openMCode)
   end
+
+  local function closeCover_noToolChange()
+    local closeMCode = rcSettings.GetValue(k.COVER_CLOSE_M_CODE)
+    rcATC.ExecuteMCode(closeMCode)
+  end
+
+  local function doNothing() end
+
+  local setup = doNothing
+  local teardown = doNothing
+  local openCover = doNothing
+  local closeCover = doNothing
   
+  -- If not called from m6, assign the noToolChange functions
+  local toolChangeState = rcATC.GetToolChangeState()
+
+  if toolChangeState == k.INACTIVE then
+    setup = setup_noToolChange
+    teardown = teardown_noToolChange
+
+    local coverEnabled = rcSettings.GetValue(k.COVER_ENABLED)
+    if coverEnabled == k.ENABLED then
+      openCover = openCover_noToolChange
+      closeCover = closeCover_noToolChange
+    end
+  end
+
+  -- Calculate max distance after seek retreat
+  local function calculatePostRetreatMaxDistance(retreatDistance)
+    local multipler = 1
+    if userUnits == k.INCHES then
+      multipler = 0.03937
+    end
+
+    return retreatDistance + (1 * multipler)
+  end
+
+  -- Handle no strike
+  local function handleStrikeCheck(didStrike)
+    if didStrike == k.FALSE then
+      rcATC.RapidToMachCoord_Z(zSafeClearance)
+      closeCover()
+      teardown()
+
+      wx.wxMessageBox("Probe was not triggered.\nThis process has been terminated.\nIf you are running a program you should stop it now.", "Probe Failure")
+      error("Probe failure")
+    end
+  end
+
+  -- Touch off settings
+  local xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
+  local ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
+  local zSeekStart = rcSettings.GetValue(k.Z_SEEK_START)
+  local maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
+  local seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
+  local seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
+  local setFeed = rcSettings.GetValue(k.SET_FEED_RATE)
+  local didStrike
+  -- Perform touch off routine
+  setup()
+  openCover()
+
+  rcATC.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
+  
+  didStrike = rcATC.ProbeDown(maxDistance, seekFeed)
+  handleStrikeCheck(didStrike)
+  
+  rcATC.RapidIncremental_Z(seekRetreat)
+
+  --Adjust max distance for "set" function
+  maxDistance = calculatePostRetreatMaxDistance(seekRetreat)
+
+  didStrike = rcATC.ProbeDown(maxDistance, setFeed)
+  handleStrikeCheck(didStrike)
+
+  rcATC.RapidToMachCoord_Z(zSafeClearance)
+  rcATC.SetTLO(currentTool)
+  rcATC.ActivateTLO(currentTool)
+
+  closeCover()
+  teardown()
 end
 
 if (mc.mcInEditor() == 1) then
-	dofile ("load_rapidChangeATC.mcs")
+	local inst = mc.mcGetInstance()
+	local profile = mc.mcProfileGetName(inst)
+	dofile ("Profiles\\" .. profile .. "\\Macros\\load_rapidChangeATC.mcs")
 	m131()
 end
