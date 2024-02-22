@@ -9,6 +9,8 @@ local cpaths = machDir .. "/Profiles/" .. profile .. "/Modules/?.dll" --Default 
 paths = paths .. ";" .. machDir .. "/Profiles/" .. profile .. "/Modules/?.mcs" --Lets also look here for modules with mcs extensions
 paths = paths .. ";" .. machDir .. "/Modules/?.lua" --Lets add a location to look for modules with lua extensions
 paths = paths .. ";" .. machDir .. "/Modules/?.mcs" --Lets add a location to look for modules with mcs extensions
+paths = paths .. ";" .. machDir .. "/Modules/RapidChangeATC/?.lua" --Added to look for modules in RapidChangeATC
+paths = paths .. ";" .. machDir .. "/Modules/RapidChangeATC/?.mcs" --Added to look for modules in RapidChangeATC
 
 --Check package.path to see if we need to add a ;
 local MyS = package.path
@@ -33,6 +35,38 @@ end
 
 package.cpath = cpaths .. package.cpath --Do this only after you have built the string including all locations to look in
 
---RapidChangeATC module
-package.loaded.mcRapidChangeATC = nil
-rcATC = require "mcRapidChangeATCModule"
+--RapidChangeATC Modules
+package.loaded.RapidChangeConstants = nil
+rcConstants = require "RapidChangeConstants"
+
+package.loaded.RapidChangeLogger = nil
+rcLog = require "RapidChangeLogger"
+
+package.loaded.RapidChangeErrorHandler = nil
+rcErrors = require "RapidChangeErrorHandler"
+
+package.loaded.RapidChangeSettings = nil
+rcSettings = require "RapidChangeSettings"
+
+package.loaded.RapidChangeController = nil
+rcCntl = require "RapidChangeController"
+
+package.loaded.RapidChangeSignals = nil
+rcSignals = require "RapidChangeSignals"
+
+package.loaded.RapidChangeSubroutines = nil
+rcSub = require "RapidChangeSubroutines"
+
+
+--RapidChangeATC user config file
+package.loaded.RapidChangeUserConfig = nil
+rcConfig = require "RapidChangeUserConfig"
+rcConfig.Load()
+
+
+
+
+
+
+
+
