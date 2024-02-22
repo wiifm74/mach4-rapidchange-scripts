@@ -1,44 +1,8 @@
 function m109()
-  --Local functions
-  local function closeAxis()
-    --Record and ensure proper units if not in a tool change, otherwise it's been done
-    local toolChangeState = rcATC.GetToolChangeState()
-    if toolChangeState == k.INACTIVE then
-      rcATC.RecordUnits()
-
-      local userUnits = rcSettings.GetValue(k.UNITS)
-      rcATC.SetUnits(userUnits)
-    end
-
-    --Open cover
-    local axis = rcSettings.GetValue(k.COVER_AXIS)
-    local pos = rcSettings.GetValue(k.COVER_CLOSED_POS)
-
-    rcATC.RapidToMachCoord(axis, pos)
-
-    --Restore units if necessary
-    if rcATC.GetToolChangeState() == k.INACTIVE then
-      rcATC.RestoreUnits()
-    end
-  end
-
-  local function closeOutput()
-    local outputNum = rcSettings.GetValue(k.COVER_OUTPUT)
-    --Do nothing if already closed so we don't dwell unneccesarily
-    if rcATC.GetOutputState(outputNum) == k.INACTIVE then return end
-
-    local dwellTime = rcSettings.GetValue(k.COVER_DWELL)
-
-    rcATC.DeactivateOutput(outputNum)
-    rcATC.Dwell(dwellTime)
-  end
-
-  local controlMode = rcSettings.GetValue(k.COVER_CONTROL)
-  if controlMode == k.COVER_CONTROL_AXIS then
-    closeAxis()
-  else
-    closeOutput()
-  end
+  rcSub.Validate_CoverControl()
+  rcSub.Setup_CoverControl()
+  rcSub.Execute_CoverClose()
+  rcSub.Teardown_CoverControl()
 end
 
 if (mc.mcInEditor() == 1) then

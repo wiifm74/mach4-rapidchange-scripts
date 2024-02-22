@@ -44,14 +44,9 @@ RapidChangeConstants.COVER_CONTROL_OPTIONS = {
   { value = RapidChangeConstants.COVER_CONTROL_OUTPUT, label = "Output" },
 }
 
-RapidChangeConstants.IR_ACTIVE_STATE_OPTIONS = {
-  { value = RapidChangeConstants.ACTIVE_BROKEN, label = "Active Broken" },
-  { value = RapidChangeConstants.ACTIVE_CLEAR, label = "Active Clear" },
-}
-
-RapidChangeConstants.PROBE_OPTIONS = {
-  { value = RapidChangeConstants.ACTIVE_BROKEN, label = "Active Broken" },
-  { value = RapidChangeConstants.ACTIVE_CLEAR, label = "Active Clear" },
+RapidChangeConstants.BEAM_BROKEN_STATE_OPTIONS = {
+  { value = RapidChangeConstants.ACTIVE, label = "Active" },
+  { value = RapidChangeConstants.INACTIVE, label = "Inactive" },
 }
 
 RapidChangeConstants.UNIT_OPTIONS = {
@@ -146,7 +141,8 @@ RapidChangeConstants.ENGAGE_FEED_RATE = "EngageFeedRate"
 
 --Touch off
 RapidChangeConstants.TOUCH_OFF_ENABLED = "TouchOffEnabled"
-RapidChangeConstants.TOUCH_OFF_M_CODE = "TouchOffMCode"
+RapidChangeConstants.TOOL_SETTER_INTERNAL = "ToolSetterInternal"
+--RapidChangeConstants.TOUCH_OFF_M_CODE = "TouchOffMCode"
 RapidChangeConstants.X_TOOL_SETTER = "XToolSetter"
 RapidChangeConstants.Y_TOOL_SETTER = "YToolSetter"
 RapidChangeConstants.Z_SEEK_START = "ZSeekStart"
@@ -161,7 +157,7 @@ RapidChangeConstants.TOOL_REC_OVERRIDE = "ToolRecognitionOverride"
 -- RapidChangeConstants.IR_PORT = "IRPort"
 -- RapidChangeConstants.IR_PIN = "IRPin"
 RapidChangeConstants.IR_INPUT = "IRInput"
-RapidChangeConstants.IR_ACTIVE_STATE = "IRActiveState"
+RapidChangeConstants.BEAM_BROKEN_STATE = "BEAM_BROKEN_STATE"
 RapidChangeConstants.Z_ZONE_1 = "ZZone1"
 RapidChangeConstants.Z_ZONE_2 = "ZZone2"
 

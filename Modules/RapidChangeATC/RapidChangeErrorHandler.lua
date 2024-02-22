@@ -1,36 +1,34 @@
 local RapidChangeErrorHandler = {}
 
-function RapidChangeErrorHandler.HandleMachAPI(rc, message, title)
-  --If there's no error, there's nothing to do
+local function getErrorName(rc)
+  local errorName = "UNKNOWN"
+
+  for key, value in pairs(mc) do
+    if value == rc and type(key) == "string" and string.sub(key, 1 ,6) == "MERROR" then
+      errorName = key
+    end
+  end
+
+  return errorName
+end
+
+local function showAPIError(rc)
+  local errorName = getErrorName(rc)
+  local title = "MachAPI Error"
+  local header = string.format("MachAPI Error: %i %s\n\n", rc, errorName)
+  local message = "A RapidChange script has encountered an unexpected error.\nThe error has been logged. If the problem persists, please contact RapidChange ATC support."
+
+  rcLog.LogErrorMachAPI(rc, errorName)
+  wx.wxMessageBox(header .. message, title)
+  error(message)
+end
+
+function RapidChangeErrorHandler.GuardAPIError(rc)
   if rc == mc.MERROR_NOERROR then
     return
-  end
-
-	title = title or "Mach API Error"
-  message = message or ""
-
-  if rc == mc.MERROR_INVALID_INSTANCE then
-    message = "Invalid Mach4 instance.\n" .. message
-  elseif rc == mc.MERROR_INVALID_ARG then
-    message = "Invalid argument.\n" .. message
-  elseif rc == mc.MERROR_INVALID_STATE then
-    message = "Invalid state.\n" .. message
-  elseif rc == mc.MERROR_NOT_NOW then
-    message = "Operation could not be completed at this time.\n" .. message
-  elseif rc == mc.MERROR_NOT_COMPILED then
-    message = "Compile error.\n" .. message
-  elseif rc == mc.MERROR_SIGNAL_NOT_FOUND then
-    message = "Signal not found.\n" .. message
-  elseif rc == mc.MERROR_AXIS_NOT_FOUND then
-    message = "Axis not found.\n" .. message
-	elseif rc == mc.MERROR_IPC_NOT_READY then
-		message = "Interprocess Communication substem was not ready.\n" .. message
   else
-    message = string.format("Unknown error.\nCode: %i\n", rc) .. message
+    showAPIError(rc)
   end
-
-  wx.wxMessageBox(message, title)
-  error(message)
 end
 
 function RapidChangeErrorHandler.Throw(message, title)

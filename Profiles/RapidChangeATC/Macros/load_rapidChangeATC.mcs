@@ -35,26 +35,38 @@ end
 
 package.cpath = cpaths .. package.cpath --Do this only after you have built the string including all locations to look in
 
---RapidChangeATC constants
+--RapidChangeATC Modules
 package.loaded.RapidChangeConstants = nil
-k = require "RapidChangeConstants"
+rcConstants = require "RapidChangeConstants"
 
---RapidChangeATC module
-package.loaded.RapidChangeController = nil
-rcATC = require "RapidChangeController"
+package.loaded.RapidChangeLogger = nil
+rcLog = require "RapidChangeLogger"
 
---RapidChangeATC settings
+package.loaded.RapidChangeErrorHandler = nil
+rcErrors = require "RapidChangeErrorHandler"
+
 package.loaded.RapidChangeSettings = nil
 rcSettings = require "RapidChangeSettings"
 
---RapidChangeATC errors
-package.loaded.RapidChangeErrorHandler = nil
-rcErrors = require "RapidChangeErrorHandler"
+package.loaded.RapidChangeController = nil
+rcCntl = require "RapidChangeController"
+
+package.loaded.RapidChangeSignals = nil
+rcSignals = require "RapidChangeSignals"
+
+package.loaded.RapidChangeSubroutines = nil
+rcSub = require "RapidChangeSubroutines"
+
 
 --RapidChangeATC user config file
 package.loaded.RapidChangeUserConfig = nil
 rcConfig = require "RapidChangeUserConfig"
 rcConfig.Load()
+
+
+
+
+
 
 
 

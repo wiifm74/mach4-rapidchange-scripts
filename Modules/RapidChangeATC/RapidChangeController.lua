@@ -1,8 +1,22 @@
 local RapidChangeController = {}
+--Constants
+local k = rcConstants
+
+--Load modules, called from loader
+function RapidChangeController.Load(apiExecutor)
+		--Allow for debug updates
+		package.loaded.RapidChangeConstants = nil
+		--Reload the module
+		RapidChangeController.Constants = require "RapidChangeConstants"
+		--Reassign local convenience variable
+		k = RapidChangeController.Constants
+end
+
 --Get mach instance
 local inst = mc.mcGetInstance()
 
 -- Gcode constants
+
 local LINEAR_TO_MACH = "g90g53g1"
 local LINEAR_INCREMENTAL = "g91g1"
 local PROBE = "g90g31"
@@ -87,78 +101,44 @@ end
 --Execute provided lines of gcode. Pass each line of gcode as a separate arg.
 local function executeLines(...)
   local block = concat(...)
-  local rc = mc.mcCntlGcodeExecuteWait(inst, block)
-
-  rcErrors.HandleMachAPI(rc, string.format("Gcode:\n%s", block), "Gcode Execution Error")
-end
-
-local function hold(reason)
-	local rc = mc.mcFileHoldAquire(inst, reason, 0)
-	rcErrors.HandleMachAPI(rc, "Error on file hold.")
+	local rc = mc.mcCntlGcodeExecuteWait(inst, block)
+	rcErrors.GuardAPIError(rc)
 end
 
 local function getAxisPos(axis, useMach)
 	local pos, rc
-	
+
 	if useMach == true then
 		pos, rc = mc.mcAxisGetMachinePos(inst, axis)
 	else
 		pos, rc = mc.mcAxisGetPos(inst, axis)
 	end
 
-	rcErrors.HandleMachAPI(rc, "Error retrieving axis position.")
-
+	rcErrors.GuardAPIError(rc)
 	return pos
 end
 
 local function getProbeMachPosZ()
-	local pos, rc = mc.mcAxisGetProbePos(inst, k.Z_AXIS, 1)
-	rcErrors.HandleMachAPI(rc, "Error retrieving Z probe trigger position.")
+	local pos, rc = mc.mcAxisGetProbePos(inst, k.Z_AXIS, k.TRUE)
+	rcErrors.GuardAPIError(rc)
 	return pos
 end
-
-local function getSignalHandle(id, prefix)
-	if prefix ~= nil then
-		local signalKey = string.format(prefix .. "%i", id)
-		id = mc[signalKey]
-	end
-
-	local hsig, rc = mc.mcSignalGetHandle(inst, id)
-	rcErrors.HandleMachAPI(rc, "Error getting signal handle.")
-	return hsig
-end
-
-local function getSignalState(id, prefix)
-	local hsig = getSignalHandle(id, prefix)
-	local state, rc = mc.mcSignalGetState(hsig)
-	rcErrors.HandleMachAPI(rc, "Error reading signal state.")
-	return state
-end
-
-local function setSignalState(outputNum, state)
-	local hsig = getSignalHandle(outputNum, "OSIG_OUTPUT")
-	local rc = mc.mcSignalSetState(hsig, state)
-	rcErrors.HandleMachAPI(rc, "Error setting signal state.")
-end
-
---Controller state
-local programUnits = nil
 
 --Public controller functions
 function RapidChangeController.GetCurrentTool()
 	local tool, rc = mc.mcToolGetCurrent(inst)
-	rcErrors.HandleMachAPI(rc, "Error getting current tool.")
+	rcErrors.GuardAPIError(rc)
 	return tool
 end
 
 function RapidChangeController.SetCurrentTool(tool)
 	local rc = mc.mcToolSetCurrent(inst, tool)
-	rcErrors.HandleMachAPI(rc, "Error setting current tool.")
+	rcErrors.GuardAPIError(rc)
 end
 
 function RapidChangeController.GetSelectedTool()
 	local tool, rc = mc.mcToolGetSelected(inst)
-	rcErrors.HandleMachAPI(rc, "Error getting selected tool.")
+	rcErrors.GuardAPIError(rc)
 	return tool
 end
 
@@ -173,7 +153,7 @@ end
 function RapidChangeController.SetTLO(tool)
 	local offset = getProbeMachPosZ()
 	local rc = mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, tool, offset)
-	rcErrors.HandleMachAPI(rc, "Error setting tool length offset.")
+	rcErrors.GuardAPIError(rc)
 	--TODO: Should we dwell here? Not sure how to handle this. Mach4 docs say the
 	--tool offset shouldn't be changed while gcode is running. Can we safely work around this?
 end
@@ -186,47 +166,32 @@ function RapidChangeController.Dwell(seconds)
 	executeLines(line(DWELL, p(seconds)))
 end
 
-function RapidChangeController.ExecuteMCode(mCodeNum)
-	executeLines(line(m(mCodeNum)))
+function RapidChangeController.GetDefaultUnits()
+  local units, rc = mc.mcCntlGetUnitsDefault(inst)
+	rcErrors.GuardAPIError(rc)
+	return units
 end
 
-function RapidChangeController.RecordUnits()
-	local units, rc = mc.mcCntlGetUnitsCurrent(inst)
-	rcErrors.HandleMachAPI(rc, "Error recording units mode.")
-	programUnits = units / 10
+function RapidChangeController.RecordState()
+	local rc = mc.mcCntlMachineStatePush(inst)
+	rcErrors.GuardAPIError(rc)
 end
 
-function RapidChangeController.RestoreUnits()
-	if programUnits ~= nil then
-		executeLines(line(g(programUnits)))
-	end
+function RapidChangeController.RestoreState()
+	local rc = mc.mcCntlMachineStatePop(inst)
+	rcErrors.GuardAPIError(rc)
+end
+
+function RapidChangeController.SetDefaultUnits()
+  local units = RapidChangeController.GetDefaultUnits()
+  local unitCode = units / 10
+  RapidChangeController.SetUnits(unitCode)
 end
 
 function RapidChangeController.SetUnits(units)
 	if units == 20 or units == 21 then
 		executeLines(line(g(units)))
 	end
-end
-
---Reads input state for Input # inputs based on their number 0-63 
-function RapidChangeController.GetInputState(inputNum)
-	return getSignalState(inputNum, "ISIG_INPUT")
-end
-
-function RapidChangeController.GetOutputState(outputNum)
-	return getSignalState(outputNum, "OSIG_OUTPUT")
-end
-
-function RapidChangeController.GetToolChangeState()
-	return getSignalState(mc.OSIG_TOOL_CHANGE)
-end
-
-function RapidChangeController.ActivateOutput(outputNum)
-	setSignalState(outputNum, k.ACTIVE)
-end
-
-function RapidChangeController.DeactivateOutput(outputNum)
-	setSignalState(outputNum, k.INACTIVE)
 end
 
 --Spindle
@@ -246,8 +211,6 @@ end
 function RapidChangeController.RapidIncremental_Z(zDist)
 	executeLines(RAPID_INCREMENTAL, z(zDist))
 end
---Rapid machine coord move to zPosTraverse then to xPos, yPos, then to zPosTarget
-
 
 --Rapid machine coord move to xPos, yPos, then to zPos
 function RapidChangeController.RapidToMachCoords_XY_Z(xPos, yPos, zPos)
@@ -257,6 +220,7 @@ function RapidChangeController.RapidToMachCoords_XY_Z(xPos, yPos, zPos)
 	)
 end
 
+--Rapid machine coord move to zPosTraverse then to xPos, yPos, then to zPosTarget
 function RapidChangeController.RapidToMachCoords_Z_XY_Z(zPosTraverse, xPos, yPos, zPosTarget)
 	executeLines(
 		line(RAPID_TO_MACH, z(zPosTraverse)),
@@ -286,10 +250,9 @@ function RapidChangeController.ProbeDown(maxDistance, feed)
 
 	executeLines(line(PROBE, z(targetZPos), f(feed)))
 	
-	local didstrike, rc = mc.mcCntlProbeGetStrikeStatus(inst)
-	rcErrors.HandleMachAPI(rc, "Error checking probe trigger.")
-	
-	return didstrike
+	local didStrike, rc = mc.mcCntlProbeGetStrikeStatus(inst)
+	rcErrors.GuardAPIError(rc)
+	return didStrike
 end
 
 function RapidChangeController.RapidToMachCoord(axis, pos)
@@ -299,6 +262,28 @@ end
 
 function RapidChangeController.RapidToMachCoord_Z(zPos)
 	executeLines(line(RAPID_TO_MACH, z(zPos)))
+end
+
+function RapidChangeController.ShowBox(message, terminate)
+	wx.wxMessageBox(message, "RapidChange ATC")
+
+	if terminate == true then
+		error(message)
+	end
+end
+
+function RapidChangeController.ShowStatus(message)
+	local rc = mc.mcCntlSetLastError(inst, message)
+	rcErrors.GuardAPIError(rc)
+end
+
+function RapidChangeController.Terminate(message)
+	if tostring(message) == nil then
+		message = "Script terminated without message"
+	end
+
+	RapidChangeController.ShowStatus(message)
+	error(message)
 end
 
 return RapidChangeController

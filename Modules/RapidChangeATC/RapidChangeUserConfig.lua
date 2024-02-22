@@ -22,12 +22,13 @@ rcSettings.SetValue(k.SETTING_NAME, k.OPTION_TWO)
 
 local RapidChangeUserConfig = {}
 
+local k = rcConstants
+
 function RapidChangeUserConfig.Load()
   -- Tool Change Settings
 
-  -- Units for your configuration. Configure in your default units.
-  -- Options: (MILLIMETERS, INCHES)
-  rcSettings.SetValue(k.UNITS, k.MILLIMETERS)
+  -- IMPORTANT: UNITS --
+  -- Configure using your established default machine units.
 
   -- Axis on which the magazine is aligned.
   -- Options: (X_AXIS, Y_AXIS)
@@ -83,9 +84,9 @@ function RapidChangeUserConfig.Load()
   -- Options: (DISABLED, ENABLED)
   rcSettings.SetValue(k.TOUCH_OFF_ENABLED, k.DISABLED)
 
-  -- M Code for the tool touch off macro (Default is 131 for the included tool touch off macro)
-  -- You can reassign the M-Code for the included file or call a custom macro.
-  rcSettings.SetValue(k.TOUCH_OFF_M_CODE, 131)
+  -- When enabled the dust cover will operate for independently called tool touch offs.
+  -- Options: (DISABLED, ENABLED)
+  rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.DISABLED)
 
   -- X Position (Machine Coordinates) of the center of the tool setter.
   rcSettings.SetValue(k.X_TOOL_SETTER, 0.000)
@@ -97,7 +98,7 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.Z_SEEK_START, 0.000)
 
   -- Maximum distance of travel from Z Seek Start on initial probe. 
-  -- Used to calculate a probe target and guard against gross over travel.
+  -- Safety measure for gross over travel.
   rcSettings.SetValue(k.SEEK_MAX_DISTANCE, 0.000)
 
   -- Feedrate for the initial(seek) probe.
@@ -106,29 +107,29 @@ function RapidChangeUserConfig.Load()
   -- Distance to retreat after trigger, before a subsequent(set) probe.
   rcSettings.SetValue(k.SEEK_RETREAT, 0.000)
 
-  -- Feedrate for any subsequent(seek) probe.
+  -- Feedrate for any subsequent(set) probe.
   rcSettings.SetValue(k.SET_FEED_RATE, 0.0)
 
 
   -- Tool Recognition Settings
 
-  -- Enable infrared tool recognition.
-  -- Default disabled behavior is to pause for user confirmation on each load or unload
+  -- Enable/Disable infrared tool recognition.
+  -- Default behavior when disabled is to pause for user confirmation on each load or unload.
   -- Options: (DISABLED, ENABLED)
   rcSettings.SetValue(k.TOOL_REC_ENABLED, k.DISABLED)
 
-  -- Enable tool recognition override.
-  -- Enable override when tool recognition is disabled to override the default pause for confirmation
+  -- Enable/Disable tool recognition override.
+  -- Enable override when tool recognition is disabled to override the default pause for confirmation.
   -- WARNING: Tool change will NOT stop on a failed load or unload when using override.
   -- Options: (DISABLED, ENABLED)
-  rcSettings.SetValue(k.TOOL_REC_ENABLED, k.DISABLED)
+  rcSettings.SetValue(k.TOOL_REC_OVERRIDE, k.DISABLED)
 
   -- IR Sensor input #, for Input #1 enter 1, Input #2 enter 2, etc.
   rcSettings.SetValue(k.IR_INPUT, 0)
 
-  -- Indicate whether the IR input is active when the beam is broken or when the beam is clear.
-  -- Options: (ACTIVE_BROKEN, ACTIVE_CLEAR)
-  rcSettings.SetValue(k.IR_ACTIVE_STATE, k.ACTIVE_BROKEN)
+  -- Indicate the state of the input when the ir beam is broken.
+  -- Options: (ACTIVE, INACTIVE)
+  rcSettings.SetValue(k.BEAM_BROKEN_STATE, k.ACTIVE)
 
   -- Z Position (Machine Coordinates) for confirming the absence of a nut when unloading and the presence of a nut when loading.
   rcSettings.SetValue(k.Z_ZONE_1, 0.000)
@@ -147,44 +148,31 @@ function RapidChangeUserConfig.Load()
   -- Options: (COVER_CONTROL_AXIS, COVER_CONTROL_OUTPUT)
   rcSettings.SetValue(k.COVER_CONTROL, k.COVER_CONTROL_AXIS)
 
-  -- M Code for the open dust cover macro (Default is 108 for the included macro)
-  -- You can reassign the M-Code for the included file or call a custom macro.
-  rcSettings.SetValue(k.COVER_OPEN_M_CODE, 108)
-
-  -- M Code for the close dust cover macro (Default is 109 for the included macro)
-  -- You can reassign the M-Code for the included file or call a custom macro.
-  rcSettings.SetValue(k.COVER_CLOSE_M_CODE, 109)
-
-  -- Dust Cover Axis Control Settings
-
+  -- Axis control only
   -- Designated axis for controlling the dust cover with axis control.
   -- Options: (A_AXIS, B_AXIS, C_AXIS)
   rcSettings.SetValue(k.COVER_AXIS, k.A_AXIS)
 
+  -- Axis control only
   -- Designated axis position (machine coordinates) at which the dust cover is fully open.
   rcSettings.SetValue(k.COVER_OPEN_POS, 0.000)
 
+  -- Axis control only
   -- Designated axis position (machine coordinates) at which the dust cover is fully closed.
   rcSettings.SetValue(k.COVER_CLOSED_POS, 0.000)
 
-  -- Dust Cover Output Control Settings
-
+  -- Ouptut control only
   -- Dust cover output #, for Output #1 enter 1, Output #2 enter 2, etc.
   rcSettings.SetValue(k.COVER_OUTPUT, 0)
 
+  -- Ouptut control only
   -- Dwell time (seconds) to allow an output controlled dust cover to fully open or close.
   rcSettings.SetValue(k.COVER_DWELL, 0.00)
 
-
-  -- Hook Settings
-
-  -- M-Code for a custom macro to run before every tool change
-  -- Default is 0 and is ignored. (It does not call M0 with a value of 0)
-  rcSettings.SetValue(k.BEFORE_CHANGE_M_CODE, 0)
-
-  -- M-Code for a custom macro to run after every tool change
-  -- Default is 0 and is ignored. (It does not call M0 with a value of 0)
-  rcSettings.SetValue(k.AFTER_CHANGE_M_CODE, 0)
+  
+  -- DO NOT ALTER OR REMOVE
+  -- Call to update settings for macros 
+  rcSub.UpdateSettings()
 end
 
 return RapidChangeUserConfig

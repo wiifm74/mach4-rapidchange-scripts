@@ -1,4 +1,6 @@
 local RapidChangeSettings = {}
+--RapidChange constants
+local k = rcConstants
 
 --Get Mach4 instance
 local inst = mc.mcGetInstance()
@@ -29,7 +31,6 @@ end
 --Setting definitions defined in display order for UI looping
 local definitions = {
   --Tool Change
-  createOptionDefinition(k.UNITS, "Units", "Units for this configuration.", k.UNIT_OPTIONS),
   createOptionDefinition(k.ALIGNMENT, "Alignment", "Axis on which the magazine is aligned.", k.ALIGNMENT_OPTIONS),
   createOptionDefinition(k.DIRECTION, "Direction", "Direction of travel from Pocket 1 to Pocket 2.", k.DIRECTION_OPTIONS),
   createDefinition(k.POCKET_COUNT, "Pocket Count", "The number of tool pockets in your magazine.", k.COUNT_SETTING),
@@ -49,7 +50,7 @@ local definitions = {
   --Tool Touch Off
   --TODO: Add Probe input selection for tool setter?
   createDefinition(k.TOUCH_OFF_ENABLED, "Tool Touch Off Enabled", "Calls the configured Tool Touch Off M-Code after loading a tool.", k.SWITCH_SETTING),
-  createDefinition(k.TOUCH_OFF_M_CODE, "Tool Touch Off M-Code", "The M-Code for the tool touch off macro to be called after loading a tool.", k.MCODE_SETTING, 131),
+  createDefinition(k.TOOL_SETTER_INTERNAL, "Tool Setter Internal", "When enabled the dust cover will open for independent tool touch offs.", k.SWITCH_SETTING),
   createDefinition(k.X_TOOL_SETTER, "X Tool Setter", "X Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
   createDefinition(k.Y_TOOL_SETTER, "Y Tool Setter", "Y Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
   createDefinition(k.Z_SEEK_START, "Z Seek Start", "Z Position (Machine Coordinates) to begin the initial(seek) probe.", k.DISTANCE_SETTING),
@@ -61,10 +62,8 @@ local definitions = {
   --Tool Recognition
   createDefinition(k.TOOL_REC_ENABLED, "Tool Recognition Enabled", "Enable infrared tool recognition.", k.SWITCH_SETTING),
   createDefinition(k.TOOL_REC_OVERRIDE, "Tool Recognition Override", "When enabled will override the default disable behavior of pausing for user confirmation.", k.SWITCH_SETTING),
-  -- createDefinition(k.IR_PORT, "IR Sensor Port", "Port number for the tool recognition IR sensor input.", k.PORT_SETTING),
-  -- createDefinition(k.IR_PIN, "IR Sensor Pin", "Port number for the tool recognition IR sensor input.", k.PIN_SETTING),
   createOptionDefinition(k.IR_INPUT, "IR Input", "Input # for the tool recognition IR sensor.", k.INPUT_SIGNAL_OPTIONS),
-  createOptionDefinition(k.IR_ACTIVE_STATE, "IR Active Broken", "Indication of whether the IR input is active when the beam is broken or when the beam is clear.", k.IR_ACTIVE_STATE_OPTIONS),
+  createOptionDefinition(k.BEAM_BROKEN_STATE, "Beam Broken State", "The state of the IR input when the beam is broken..", k.BEAM_BROKEN_STATE_OPTIONS),
   createDefinition(k.Z_ZONE_1, "Z Zone 1", "Z Position (Machine Coordinates) for confirming the absence of a nut when unloading and the presence of a nut when loading.", k.DISTANCE_SETTING),
   createDefinition(k.Z_ZONE_2, "Z Zone 2", "Z Position (Machine Coordinates) for confirming complete threading when loading.", k.DISTANCE_SETTING),
 
@@ -74,16 +73,10 @@ local definitions = {
   createOptionDefinition(k.COVER_AXIS, "Dust Cover Axis", "Designated axis for controlling the dust cover with axis control.", k.COVER_AXIS_OPTIONS),
   createDefinition(k.COVER_OPEN_POS, "Dust Cover Open Position", "Designated axis position (machine coordinates) at which the dust cover is fully open.", k.DISTANCE_SETTING),
   createDefinition(k.COVER_CLOSED_POS, "Dust Cover Closed Position", "Designated axis position (machine coordinates) at which the dust cover is fully closed.", k.DISTANCE_SETTING),
-  -- createDefinition(k.COVER_PORT, "Dust Cover Port", "Port number for the dust cover output.", k.PORT_SETTING),
-  -- createDefinition(k.COVER_PIN, "Dust Cover Pin", "Pin number for the dust cover output.", k.PIN_SETTING),
   createOptionDefinition(k.COVER_OUTPUT, "Dust Cover Output", "Output # for controlling the dust cover.", k.OUTPUT_SIGNAL_OPTIONS),
   createDefinition(k.COVER_DWELL, "Dust Cover Dwell", "Dwell time (seconds) to allow an output controlled dust cover to fully open or close.", k.DWELL_SETTING),
   createDefinition(k.COVER_OPEN_M_CODE, "Dust Cover Open M-Code", "The assigned M-Code for opening the dust cover.", k.MCODE_SETTING),
   createDefinition(k.COVER_CLOSE_M_CODE, "Dust Cover Close M-Code", "The assigned M-Code for closing the dust cover.", k.MCODE_SETTING),
-
-  --Hooks
-  createDefinition(k.BEFORE_CHANGE_M_CODE, "Before Change M-Code", "The M-Code for a custom macro to run before every tool change.", k.MCODE_SETTING),
-  createDefinition(k.AFTER_CHANGE_M_CODE, "After Change M-Code", "The M-Code for a custom macro to run after every tool change.", k.MCODE_SETTING),
 }
 
 local function isChecked(value)
@@ -163,6 +156,16 @@ function RapidChangeSettings.GetValue(key)
   else
     return mc.mcProfileGetInt(inst, RC_SECTION, definition.key, definition.defaultValue)
   end
+end
+
+function RapidChangeSettings.GetCurrentSettings()
+  local settings = {}
+
+  for _, value in ipairs(definitions) do
+    settings[value.key] = RapidChangeSettings.GetValue(value.key)
+  end
+
+  return settings
 end
 
 --Get an iterable list of settings for UI controls
