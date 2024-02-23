@@ -5,6 +5,7 @@
 !.gitignore
 
 !Modules/RapidChangeATC/*
+!Modules/RapidChangeATC/Core/*
 !Screens/*
 !Profiles/RapidChangeATC/*
 !Profiles/RapidChangeATC/Macros/*

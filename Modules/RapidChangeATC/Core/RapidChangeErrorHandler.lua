@@ -1,19 +1,10 @@
 local RapidChangeErrorHandler = {}
 
-local function getErrorName(rc)
-  local errorName = "UNKNOWN"
-
-  for key, value in pairs(mc) do
-    if value == rc and type(key) == "string" and string.sub(key, 1 ,6) == "MERROR" then
-      errorName = key
-    end
-  end
-
-  return errorName
-end
+local inst = mc.mcGetInstance()
 
 local function showAPIError(rc)
-  local errorName = getErrorName(rc)
+  --TODO: Handle ERROR_NOT_NOW from gcode execution better
+  local errorName = mc.mcCntlGetErrorString(inst, rc)
   local title = "MachAPI Error"
   local header = string.format("MachAPI Error: %i %s\n\n", rc, errorName)
   local message = "A RapidChange script has encountered an unexpected error.\nThe error has been logged. If the problem persists, please contact RapidChange ATC support."

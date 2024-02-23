@@ -50,6 +50,7 @@ local coverDwell = 0
 
 --Touch Off Settings
 local touchOffEnabled = 0
+local toolSetterInternal = 0
 local maxDistance = 0
 local seekRetreat = 0
 local seekFeed = 0
@@ -70,24 +71,11 @@ local function convert(mmValue)
   end
 end
 
-local function getIrBrokenState()
-  if irActiveState == k.ACTIVE_CLEAR then
-    return k.INACTIVE
-  else
-    return k.ACTIVE
-  end
-end
-
-local function getMachToolNumbers()
-  currentTool = rcCntl.GetCurrentTool()
-  selectedTool = rcCntl.GetSelectedTool()
-end
-
 local function isToolInRange(tool)
   if tool > 0 and tool <= pocketCount then
-    return true
+    return k.TRUE
   else
-    return false
+    return k.FALSE
   end
 end
 
@@ -113,7 +101,7 @@ local function calculateAlignedPocketPosition(tool)
 end
 
 local function getPocketPos(axis, tool)
-  if isToolInRange(tool) == false then
+  if isToolInRange(tool) == k.FALSE then
     return getManualPos(axis)
   end
 
@@ -124,7 +112,90 @@ local function getPocketPos(axis, tool)
   end
 end
 
-local function getSettingValues()
+local function getMachToolNumbers()
+  currentTool = rcCntl.GetCurrentTool()
+  selectedTool = rcCntl.GetSelectedTool()
+
+  xLoad = getPocketPos(k.X_AXIS, selectedTool)
+  yLoad = getPocketPos(k.Y_AXIS, selectedTool)
+  xUnload = getPocketPos(k.X_AXIS, currentTool)
+  yUnload = getPocketPos(k.Y_AXIS, currentTool)
+end
+
+-- local function getSettingValues()
+--   --Mach4 Settings
+--   units = rcCntl.GetDefaultUnits() / 10
+
+--   --Tool Change Settings
+--   alignment = rcSettings.GetValue(k.ALIGNMENT)
+--   direction = rcSettings.GetValue(k.DIRECTION)
+--   pocketCount = rcSettings.GetValue(k.POCKET_COUNT)
+--   pocketOffset = rcSettings.GetValue(k.POCKET_OFFSET)
+--   engageFeed = rcSettings.GetValue(k.ENGAGE_FEED_RATE)
+--   rpmLoad = rcSettings.GetValue(k.LOAD_RPM)
+--   rpmUnload = rcSettings.GetValue(k.UNLOAD_RPM)
+--   xManual = rcSettings.GetValue(k.X_MANUAL)
+--   yManual = rcSettings.GetValue(k.Y_MANUAL)
+--   xPocket1 = rcSettings.GetValue(k.X_POCKET_1)
+--   yPocket1 = rcSettings.GetValue(k.Y_POCKET_1)
+--   xLoad = getPocketPos(k.X_AXIS, selectedTool)
+--   yLoad = getPocketPos(k.Y_AXIS, selectedTool)
+--   xUnload = getPocketPos(k.X_AXIS, currentTool)
+--   yUnload = getPocketPos(k.Y_AXIS, currentTool)
+--   zEngage = rcSettings.GetValue(k.Z_ENGAGE)
+--   zMoveToLoad = rcSettings.GetValue(k.Z_MOVE_TO_LOAD)
+--   zMoveToProbe = rcSettings.GetValue(k.Z_MOVE_TO_PROBE)
+--   zRetreat = zEngage + convert(Z_RETREAT_OFFSET)
+--   zSafeClearance = rcSettings.GetValue(k.Z_SAFE_CLEARANCE)
+--   zSpindleStart = zEngage + convert(Z_SPINDLE_START_OFFSET)
+
+--   --Tool Recognition Settings
+--   toolRecEnabled = rcSettings.GetValue(k.TOOL_REC_ENABLED)
+--   toolRecOverride = rcSettings.GetValue(k.TOOL_REC_OVERRIDE)
+--   irInput = rcSettings.GetValue(k.IR_INPUT)
+--   irBrokenState = rcSettings.GetValue(k.BEAM_BROKEN_STATE)
+--   zZone1 = rcSettings.GetValue(k.Z_ZONE_1)
+--   zZone2 = rcSettings.GetValue(k.Z_ZONE_2)
+
+--   --Dust Cover Settings
+--   coverEnabled = rcSettings.GetValue(k.COVER_ENABLED)
+--   coverControl = rcSettings.GetValue(k.COVER_CONTROL)
+--   coverAxis = rcSettings.GetValue(k.COVER_AXIS)
+--   coverOpenPos = rcSettings.GetValue(k.COVER_OPEN_POS)
+--   coverClosedPos = rcSettings.GetValue(k.COVER_CLOSED_POS)
+--   coverOutput = rcSettings.GetValue(k.COVER_OUTPUT)
+--   coverDwell = rcSettings.GetValue(k.COVER_DWELL)
+
+--   --Touch Off Settings
+--   touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
+--   toolSetterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
+--   maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
+--   seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
+--   seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
+--   setFeed = rcSettings.GetValue(k.SET_FEED_RATE)
+--   xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
+--   ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
+--   zSeekStart = rcSettings.GetValue(k.Z_SEEK_START)
+-- end
+
+local function setupATCMotion()
+  rcCntl.RecordState()
+  rcCntl.SetDefaultUnits()
+  rcCntl.CoolantStop()
+  rcCntl.SpinStop()
+  rcCntl.CancelTLO()
+  rcCntl.RapidToMachCoord_Z(zSafeClearance)
+end
+
+function RapidChangeSubroutines.Validate_HomeXYZ()
+  if rcCntl.IsHomed(k.X_AXIS) == k.FALSE or rcCntl.IsHomed(k.Y_AXIS) == k.FALSE or rcCntl.IsHomed(k.Z_AXIS) == k.FALSE then
+    local message = "Machine is not homed, it is not safe to perform this function."
+    rcCntl.ShowBox(message)
+    rcCntl.Terminate(message)
+  end
+end
+
+function RapidChangeSubroutines.UpdateSettings()
   --Mach4 Settings
   units = rcCntl.GetDefaultUnits() / 10
 
@@ -140,10 +211,6 @@ local function getSettingValues()
   yManual = rcSettings.GetValue(k.Y_MANUAL)
   xPocket1 = rcSettings.GetValue(k.X_POCKET_1)
   yPocket1 = rcSettings.GetValue(k.Y_POCKET_1)
-  xLoad = getPocketPos(k.X_AXIS, selectedTool)
-  yLoad = getPocketPos(k.Y_AXIS, selectedTool)
-  xUnload = getPocketPos(k.X_AXIS, currentTool)
-  yUnload = getPocketPos(k.Y_AXIS, currentTool)
   zEngage = rcSettings.GetValue(k.Z_ENGAGE)
   zMoveToLoad = rcSettings.GetValue(k.Z_MOVE_TO_LOAD)
   zMoveToProbe = rcSettings.GetValue(k.Z_MOVE_TO_PROBE)
@@ -166,67 +233,11 @@ local function getSettingValues()
   coverOpenPos = rcSettings.GetValue(k.COVER_OPEN_POS)
   coverClosedPos = rcSettings.GetValue(k.COVER_CLOSED_POS)
   coverOutput = rcSettings.GetValue(k.COVER_OUTPUT)
-  coverDwell = rcSettings.GetValue(k.COVER_DWELL
-)
+  coverDwell = rcSettings.GetValue(k.COVER_DWELL)
 
   --Touch Off Settings
   touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
-  maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
-  seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
-  seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
-  setFeed = rcSettings.GetValue(k.SET_FEED_RATE)
-  xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
-  ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
-  zSeekStart = rcSettings.GetValue(k.Z_SEEK_START)
-end
-
-function RapidChangeSubroutines.UpdateSettings()
-  --Mach4 Settings
-  units = rcCntl.GetDefaultUnits() / 10
-
-  --Tool Change Settings
-  alignment = rcSettings.GetValue(k.ALIGNMENT)
-  direction = rcSettings.GetValue(k.DIRECTION)
-  pocketCount = rcSettings.GetValue(k.POCKET_COUNT)
-  pocketOffset = rcSettings.GetValue(k.POCKET_OFFSET)
-  engageFeed = rcSettings.GetValue(k.ENGAGE_FEED_RATE)
-  rpmLoad = rcSettings.GetValue(k.LOAD_RPM)
-  rpmUnload = rcSettings.GetValue(k.UNLOAD_RPM)
-  xManual = rcSettings.GetValue(k.X_MANUAL)
-  yManual = rcSettings.GetValue(k.Y_MANUAL)
-  xPocket1 = rcSettings.GetValue(k.X_POCKET_1)
-  yPocket1 = rcSettings.GetValue(k.Y_POCKET_1)
-  xLoad = getPocketPos(k.X_AXIS, selectedTool)
-  yLoad = getPocketPos(k.Y_AXIS, selectedTool)
-  xUnload = getPocketPos(k.X_AXIS, currentTool)
-  yUnload = getPocketPos(k.Y_AXIS, currentTool)
-  zEngage = rcSettings.GetValue(k.Z_ENGAGE)
-  zMoveToLoad = rcSettings.GetValue(k.Z_MOVE_TO_LOAD)
-  zMoveToProbe = rcSettings.GetValue(k.Z_MOVE_TO_PROBE)
-  zRetreat = zEngage + convert(Z_RETREAT_OFFSET)
-  zSafeClearance = rcSettings.GetValue(k.Z_SAFE_CLEARANCE)
-  zSpindleStart = zEngage + convert(Z_SPINDLE_START_OFFSET)
-
-  --Tool Recognition Settings
-  toolRecEnabled = rcSettings.GetValue(k.TOOL_REC_ENABLED)
-  toolRecOverride = rcSettings.GetValue(k.TOOL_REC_OVERRIDE)
-  irInput = rcSettings.GetValue(k.IR_INPUT)
-  irBrokenState = getIrBrokenState()
-  zZone1 = rcSettings.GetValue(k.Z_ZONE_1)
-  zZone2 = rcSettings.GetValue(k.Z_ZONE_2)
-
-  --Dust Cover Settings
-  coverEnabled = rcSettings.GetValue(k.COVER_ENABLED)
-  coverControl = rcSettings.GetValue(k.COVER_CONTROL)
-  coverAxis = rcSettings.GetValue(k.COVER_AXIS)
-  coverOpenPos = rcSettings.GetValue(k.COVER_OPEN_POS)
-  coverClosedPos = rcSettings.GetValue(k.COVER_CLOSED_POS)
-  coverOutput = rcSettings.GetValue(k.COVER_OUTPUT)
-  coverDwell = rcSettings.GetValue(k.COVER_DWELL
-)
-
-  --Touch Off Settings
-  touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
+  toolSetterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
   maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
   seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
   seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
@@ -347,6 +358,17 @@ function RapidChangeSubroutines.CoverCloseOutput()
   rcCntl.Dwell(coverDwell)
 end
 
+function RapidChangeSubroutines.CoverOpenAxis()
+  rcCntl.RapidToMachCoord(coverAxis, coverOpenPos)
+end
+
+function RapidChangeSubroutines.CoverOpenOutput()
+  if rcSignals.GetOutputState(coverOutput) == k.ACTIVE then return end
+
+  rcSignals.ActivateOutput(coverOutput)
+  rcCntl.Dwell(coverDwell)
+end
+
 function RapidChangeSubroutines.Execute_CoverOpen()
   if coverEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE then
     return
@@ -359,17 +381,6 @@ function RapidChangeSubroutines.Execute_CoverOpen()
   end
 end
 
-function RapidChangeSubroutines.CoverOpenAxis()
-  rcCntl.RapidToMachCoord(coverAxis, coverOpenPos)
-end
-
-function RapidChangeSubroutines.CoverOpenOutput()
-  if rcSignals.GetOutputState(coverOutput) == k.ACTIVE then return end
-
-  rcSignals.ActivateOutput(coverOutput)
-  rcCntl.Dwell(coverDwell)
-end
-
 -- This function assumes that the spindle is already at a safe height!
 -- Should only be called from m6 or after SetupToolTouchOff in m131.
 function RapidChangeSubroutines.Execute_ToolTouchOff()
@@ -378,17 +389,21 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
     return
   end
 
-  local didStrike
+  -- local didStrike
 
   rcCntl.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
-  didStrike = rcCntl.ProbeDown(maxDistance, seekFeed)
+  -- didStrike = rcCntl.ProbeDown(maxDistance, seekFeed)
+  rcCntl.ProbeDown(maxDistance, seekFeed)
+  rcCntl.RapidIncremental_Z(seekRetreat)
+
+  local didStrike = rcCntl.GetProbeStrikeStatus()
 
   if didStrike == k.FALSE then
     RapidChangeSubroutines.OnFailedProbeStrike()
     return
   end
 
-  rcCntl.RapidIncremental_Z(seekRetreat)
+  -- rcCntl.RapidIncremental_Z(seekRetreat)
 
   --Adjust max distance for "set" function
   --TODO: Clean this up
@@ -398,14 +413,18 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
   end
   maxDistance = seekRetreat + (1 * multipler)
 
-  didStrike = rcCntl.ProbeDown(maxDistance, setFeed)
+  -- didStrike = rcCntl.ProbeDown(maxDistance, setFeed)
+  rcCntl.ProbeDown(maxDistance, setFeed)
+  rcCntl.RapidToMachCoord_Z(zSafeClearance)
+
+  didStrike = rcCntl.GetProbeStrikeStatus()
 
   if didStrike == k.FALSE then
     RapidChangeSubroutines.OnFailedProbeStrike()
     return
   end
 
-  rcCntl.RapidToMachCoord_Z(zSafeClearance)
+  -- rcCntl.RapidToMachCoord_Z(zSafeClearance)
 
   --TODO: Close dust cover
 end
@@ -413,7 +432,7 @@ end
 function RapidChangeSubroutines.LoadTool()
   if selectedTool == 0 then
     RapidChangeSubroutines.LoadToolZero()
-  elseif isToolInRange(selectedTool) == true then
+  elseif isToolInRange(selectedTool) == k.TRUE then
     RapidChangeSubroutines.LoadToolAuto()
   else
     RapidChangeSubroutines.LoadToolManual()
@@ -450,7 +469,12 @@ function RapidChangeSubroutines.LoadToolZero()
 end
 
 function RapidChangeSubroutines.OnFailedProbeStrike()
+  rcCntl.ShowStatus("Probe not triggered")
   rcCntl.RapidToMachCoord_Z(zSafeClearance)
+
+  if toolSetterInternal == k.TRUE then
+    RapidChangeSubroutines.Execute_CoverClose()
+  end
   
   local message = "Probe was not triggered.\nProcess aborted."
   rcCntl.ShowBox(message)
@@ -459,27 +483,22 @@ end
 
 function RapidChangeSubroutines.Setup_CoverControl()
   if coverControl == k.COVER_CONTROL_AXIS then
-    getSettingValues()
     rcCntl.RecordState()
     rcCntl.SetDefaultUnits()
   end
 end
 
 function RapidChangeSubroutines.Setup_m6()
-  getSettingValues()
-  -- local setterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
-  rcCntl.RecordState()
-  rcCntl.SetDefaultUnits()
-  rcCntl.CoolantStop()
-  rcCntl.SpinStop()
-  rcCntl.CancelTLO()
-  rcCntl.RapidToMachCoord_Z(zSafeClearance)
-
-  --TODO: Handle dust cover
+  setupATCMotion()
+  RapidChangeSubroutines.Execute_CoverOpen()
 end
 
 function RapidChangeSubroutines.Setup_ToolTouchOff()
-  RapidChangeSubroutines.Setup_m6()
+  setupATCMotion()
+
+  if toolSetterInternal == k.TRUE then
+    RapidChangeSubroutines.Execute_CoverOpen()
+  end
 end
 
 function RapidChangeSubroutines.Teardown_CoverControl()
@@ -489,12 +508,21 @@ function RapidChangeSubroutines.Teardown_CoverControl()
 end
 
 function RapidChangeSubroutines.Teardown_m6()
+  RapidChangeSubroutines.Execute_CoverClose()
   rcCntl.RestoreState()
-  rcCntl.SetTLO(currentTool)
-  rcCntl.ActivateTLO(currentTool)
+  rcCntl.SetCurrentTool(currentTool)
+
+  if touchOffEnabled == k.ENABLED then
+    rcCntl.SetTLO(currentTool)
+    rcCntl.ActivateTLO(currentTool)
+  end
 end
 
 function RapidChangeSubroutines.Teardown_ToolTouchOff()
+  if toolSetterInternal == k.TRUE then
+    RapidChangeSubroutines.Execute_CoverClose()
+  end
+
   rcCntl.RestoreState()
   rcCntl.SetTLO(currentTool)
   rcCntl.ActivateTLO(currentTool)
@@ -503,7 +531,7 @@ end
 function RapidChangeSubroutines.UnloadTool()
   if currentTool == 0 then
     RapidChangeSubroutines.UnloadToolZero()
-  elseif isToolInRange(currentTool) == true then
+  elseif isToolInRange(currentTool) == k.TRUE then
     RapidChangeSubroutines.UnloadToolAuto()
   else
     RapidChangeSubroutines.UnloadToolManual()
@@ -552,7 +580,7 @@ end
 function RapidChangeSubroutines.Validate_ToolTouchOff()
   getMachToolNumbers()
   if currentTool == 0 then
-    rcMsg.Status("Tool touch off aborted. No current tool.", true)
+    rcCntl.Terminate("Tool touch off aborted. No current tool.")
   end
 end
 

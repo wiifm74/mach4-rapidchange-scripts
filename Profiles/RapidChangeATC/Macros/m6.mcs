@@ -1,4 +1,5 @@
 function m6()
+  -- rcSub.Validate_HomeXYZ()
   rcSub.Validate_m6()
   rcSub.Setup_m6()
   rcSub.UnloadTool()

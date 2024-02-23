@@ -85,8 +85,8 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.TOUCH_OFF_ENABLED, k.DISABLED)
 
   -- When enabled the dust cover will operate for independently called tool touch offs.
-  -- Options: (DISABLED, ENABLED)
-  rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.DISABLED)
+  -- Options: (TRUE, FALSE)
+  rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.TRUE)
 
   -- X Position (Machine Coordinates) of the center of the tool setter.
   rcSettings.SetValue(k.X_TOOL_SETTER, 0.000)

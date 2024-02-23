@@ -108,13 +108,14 @@ end
 local function getAxisPos(axis, useMach)
 	local pos, rc
 
-	if useMach == true then
+	if useMach == k.TRUE then
 		pos, rc = mc.mcAxisGetMachinePos(inst, axis)
 	else
 		pos, rc = mc.mcAxisGetPos(inst, axis)
 	end
 
 	rcErrors.GuardAPIError(rc)
+	mc.mcCntlSetLastError(inst, string.format("mcAxisGetPos = %.3f", pos))
 	return pos
 end
 
@@ -160,6 +161,12 @@ end
 
 function RapidChangeController.CoolantStop()
 	executeLines(line(COOLANT_STOP))
+end
+
+function RapidChangeController.IsHomed(axis)
+	local isHomed, rc = mc.mcAxisIsHomed(inst, axis)
+	rcErrors.GuardAPIError(rc)
+	return isHomed
 end
 
 function RapidChangeController.Dwell(seconds)
@@ -245,11 +252,13 @@ function RapidChangeController.ProbeDown(maxDistance, feed)
 		maxDistance = maxDistance * -1
 	end
 
-	local currentZPos = getAxisPos(k.Z_AXIS, false)
+	local currentZPos = getAxisPos(k.Z_AXIS)
 	local targetZPos = currentZPos - maxDistance
 
 	executeLines(line(PROBE, z(targetZPos), f(feed)))
-	
+end
+
+function RapidChangeController.GetProbeStrikeStatus()
 	local didStrike, rc = mc.mcCntlProbeGetStrikeStatus(inst)
 	rcErrors.GuardAPIError(rc)
 	return didStrike
