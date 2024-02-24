@@ -39,6 +39,8 @@ local definitions = {
   createDefinition(k.Y_POCKET_1, "Y Pocket 1", "Y Position (Machine Coordinates) of the center of Pocket 1.", k.DISTANCE_SETTING),
   createDefinition(k.X_MANUAL, "X Manual", "X Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
   createDefinition(k.Y_MANUAL, "Y Manual", "Y Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
+  --createDefinition(k.Z_MANUAL, "Z Manual", "Z Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
+  -- Comment:  I'd like to create the "Z Manual" setting for those that can't access the manual tool change position easily at k.Z_SAFE_CLEARANCE or 0
   createDefinition(k.Z_ENGAGE, "Z Engage", "Z Position (Machine Coordinates) for full engagement with the clamping nut.", k.DISTANCE_SETTING),
   createDefinition(k.Z_MOVE_TO_LOAD, "Z Move To Load", "Z Position to rise to after unloading a tool, before moving to the pocket for loading.", k.DISTANCE_SETTING),
   createDefinition(k.Z_MOVE_TO_PROBE, "Z Move To Probe", "Z Position to rise to after loading a tool, before moving to the tool setter for probing.", k.DISTANCE_SETTING),
@@ -49,6 +51,7 @@ local definitions = {
 
   --Tool Touch Off
   --TODO: Add Probe input selection for tool setter?
+  -- Comment:  there is the beginning of some code in RapidChangeController.lua
   createDefinition(k.TOUCH_OFF_ENABLED, "Tool Touch Off Enabled", "Calls the configured Tool Touch Off M-Code after loading a tool.", k.SWITCH_SETTING),
   createDefinition(k.TOOL_SETTER_INTERNAL, "Tool Setter Internal", "When enabled the dust cover will open for independent tool touch offs.", k.SWITCH_SETTING),
   createDefinition(k.X_TOOL_SETTER, "X Tool Setter", "X Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
