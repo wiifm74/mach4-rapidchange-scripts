@@ -19,21 +19,6 @@ local inst = mc.mcGetInstance()
 
 local LINEAR_TO_MACH = "g90g53g1"
 local LINEAR_INCREMENTAL = "g91g1"
---[[
--- we should be validating the g31 code against the possible signals that Mach 4 has
-local ProbeSigTable = {
-		[31] = mc.ISIG_PROBE,
-		[31.0] = mc.ISIG_PROBE,
-		[31.1] = mc.ISIG_PROBE1,
-		[31.2] = mc.ISIG_PROBE2,
-		[31.3] = mc.ISIG_PROBE3}
-	local ProbeSignal = ProbeSigTable[code]
-	if (ProbeSignal == nil) then
-		mc.mcCntlSetLastError(inst, "ERROR: Invalid probing G code")
-		mc.mcCntlEStop(inst)
-		do return end
-	end
-]]
 local PROBE = "g90g31"
 local PROBE_INCREMENTAL = "g91g31"
 local RAPID_INCREMENTAL = "g91g0"
@@ -169,13 +154,14 @@ end
 
 function RapidChangeController.SetTLO(tool)
 	local offset = getProbeMachPosZ()
-	local rc = mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, tool, offset - zSetter)
+	local rc = mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, tool, offset - zSetter) 
+	--Comment:  This allows us to use the tool to set work offsets with gauge blocks etc
 	rcErrors.GuardAPIError(rc)
 	mc.mcCntlSetLastError(inst, string.format("Tool length = %.3f", mc.mcToolGetData(inst,mc.MTOOL_MILL_HEIGHT, tool)))
 	
 	--TODO: Should we dwell here? Not sure how to handle this. Mach4 docs say the
 	--tool offset shouldn't be changed while gcode is running. Can we safely work around this?
-	--Comment from Dennis:  Every bit of user code for tool length probing that i have seen uses this method without any workaround
+	--Comment:  Every bit of user code for tool length probing that i have seen uses this method without any workaround
 end
 
 function RapidChangeController.CoolantStop()
@@ -297,6 +283,9 @@ function RapidChangeController.CheckProbe(state, code)
 		--mc.mcCntlEStop(inst)
 		do return end
 	end
+	-- Comment:  	I think the above checks should be implemented in settings and have them verified early.  
+	-- 		Some Mach4 users combine their probe signals into 31.  Others will have them wired separately.
+	
 	------------- Check Probe -------------
 	local hsig = mc.mcSignalGetHandle(inst, ProbeSignal)
 	local ProbeState = mc.mcSignalGetState(hsig)
