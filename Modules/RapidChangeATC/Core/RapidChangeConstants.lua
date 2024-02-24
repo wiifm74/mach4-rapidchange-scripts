@@ -145,12 +145,26 @@ RapidChangeConstants.TOOL_SETTER_INTERNAL = "ToolSetterInternal"
 --RapidChangeConstants.TOUCH_OFF_M_CODE = "TouchOffMCode"
 RapidChangeConstants.X_TOOL_SETTER = "XToolSetter"
 RapidChangeConstants.Y_TOOL_SETTER = "YToolSetter"
+RapidChangeConstants.Z_TOOL_SETTER = "ZToolSetter"
 RapidChangeConstants.Z_SEEK_START = "ZSeekStart"
-RapidChangeConstants.SEEK_MAX_DISTANCE = "SeekMaxDistance"
+--RapidChangeConstants.SEEK_MAX_DISTANCE = "SeekMaxDistance"
+RapidChangeConstants.SEEK_OVERSHOOT = "SeekOvershoot"
 RapidChangeConstants.SEEK_FEED_RATE = "SeekFeedRate"
 RapidChangeConstants.SEEK_RETREAT = "SeekRetreat"
 RapidChangeConstants.SET_FEED_RATE = "SetFeedRate"
-
+--[[
+createDefinition(k.TOUCH_OFF_ENABLED, "Tool Touch Off Enabled", "Calls the configured Tool Touch Off M-Code after loading a tool.", k.SWITCH_SETTING),
+  createDefinition(k.TOOL_SETTER_INTERNAL, "Tool Setter Internal", "When enabled the dust cover will open for independent tool touch offs.", k.SWITCH_SETTING),
+  createDefinition(k.X_TOOL_SETTER, "X Tool Setter", "X Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
+  createDefinition(k.Y_TOOL_SETTER, "Y Tool Setter", "Y Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
+  createDefinition(k.Z_TOOL_SETTER, "Z Tool Setter", "Z Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
+  createDefinition(k.Z_SEEK_START, "Z Seek Start", "Z Position (Machine Coordinates) to begin the initial(seek) probe.", k.DISTANCE_SETTING),
+  --createDefinition(k.SEEK_MAX_DISTANCE, "Seek Max Distance", "Maximum distance of travel from Z Seek Start on initial probe. Used to calculate a probe target and guard against gross over travel.", k.UDISTANCE_SETTING),
+  createDefinition(k.SEEK_OVERSHOOT, "Seek Overshoot", "Maximum distance of travel beyond expected probe strike.", k.DISTANCE_SETTING),
+  createDefinition(k.SEEK_FEED_RATE, "Seek Feed Rate", "Feedrate for the initial(seek) probe.", k.FEED_SETTING),
+  createDefinition(k.SEEK_RETREAT, "Seek Retreat", "Distance to retreat after trigger, before a subsequent(set) probe.", k.UDISTANCE_SETTING),
+  createDefinition(k.SET_FEED_RATE, "Set Feed Rate", "Feedrate for any subsequent(seek) probe.", k.FEED_SETTING),
+]]
 --Tool recognition
 RapidChangeConstants.TOOL_REC_ENABLED = "ToolRecognitionEnabled"
 RapidChangeConstants.TOOL_REC_OVERRIDE = "ToolRecognitionOverride"
