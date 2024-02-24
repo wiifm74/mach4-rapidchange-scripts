@@ -39,25 +39,25 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.DIRECTION, k.POSITIVE)
 
   -- Number of tool pockets in the magazine.
-  rcSettings.SetValue(k.POCKET_COUNT, 0)
+  rcSettings.SetValue(k.POCKET_COUNT, 6)
 
   -- Distance between pockets (center-to-center) along the alignment axis.
-  rcSettings.SetValue(k.POCKET_OFFSET, 0)
+  rcSettings.SetValue(k.POCKET_OFFSET, 45.0)
 
   -- X Position (Machine Coordinates) of the center of Pocket 1.
-  rcSettings.SetValue(k.X_POCKET_1, 0.000)
+  rcSettings.SetValue(k.X_POCKET_1, 1737.0)
 
   -- Y Position (Machine Coordinates) of the center of Pocket 1.
-  rcSettings.SetValue(k.Y_POCKET_1, 0.000)
+  rcSettings.SetValue(k.Y_POCKET_1, 1292.0)
 
   -- X Position (Machine Coordinates) for manual tool changes.
-  rcSettings.SetValue(k.X_MANUAL, 0.000)
+  rcSettings.SetValue(k.X_MANUAL, 2530.0)
 
   -- Y Position (Machine Coordinates) for manual tool changes.
-  rcSettings.SetValue(k.Y_MANUAL, 0.000)
+  rcSettings.SetValue(k.Y_MANUAL, 600.0)
 
   -- Z Position (Machine Coordinates) for full engagement with the clamping nut.
-  rcSettings.SetValue(k.Z_ENGAGE, 0.000)
+  rcSettings.SetValue(k.Z_ENGAGE, -187)
 
   -- Z Position (Machine Coordinates) for traversal between unloading and loading a tool.
   rcSettings.SetValue(k.Z_MOVE_TO_LOAD, 0.000)
@@ -69,47 +69,53 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.Z_SAFE_CLEARANCE, 0.000)
 
   -- Spindle speed for loading a tool (Clockwise operation).
-  rcSettings.SetValue(k.LOAD_RPM, 1000.0)
+  rcSettings.SetValue(k.LOAD_RPM, 1500.0)
 
   -- Spindle speed for unloading a tool (Counterclockwise operation).
-  rcSettings.SetValue(k.UNLOAD_RPM, 1000.0)
+  rcSettings.SetValue(k.UNLOAD_RPM, 1500.0)
 
   -- Feed rate for the engagement process.
-  rcSettings.SetValue(k.ENGAGE_FEED_RATE, 0.0)
+  rcSettings.SetValue(k.ENGAGE_FEED_RATE, 2250.0)
 
 
   -- Tool Touch Off Settings
 
   -- Calls the configured Tool Touch Off M-Code after loading a tool when enabled.
   -- Options: (DISABLED, ENABLED)
-  rcSettings.SetValue(k.TOUCH_OFF_ENABLED, k.DISABLED)
+  rcSettings.SetValue(k.TOUCH_OFF_ENABLED, k.ENABLED)
 
   -- When enabled the dust cover will operate for independently called tool touch offs.
   -- Options: (TRUE, FALSE)
-  rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.TRUE)
+  rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.FALSE)
 
   -- X Position (Machine Coordinates) of the center of the tool setter.
-  rcSettings.SetValue(k.X_TOOL_SETTER, 0.000)
+  rcSettings.SetValue(k.X_TOOL_SETTER, 2360.0)
 
   -- Y Position (Machine Coordinates) of the center of the tool setter.
-  rcSettings.SetValue(k.Y_TOOL_SETTER, 0.000)
+  rcSettings.SetValue(k.Y_TOOL_SETTER, 1292.0)
+  
+   -- Z Position (Machine Coordinates) of the center of the tool setter. 
+  rcSettings.SetValue(k.Z_TOOL_SETTER, -160.000)  
 
   -- Z Position (Machine Coordinates) to begin the initial(seek) probe.
   rcSettings.SetValue(k.Z_SEEK_START, 0.000)
-
+--[[  
   -- Maximum distance of travel from Z Seek Start on initial probe. 
   -- Safety measure for gross over travel.
-  rcSettings.SetValue(k.SEEK_MAX_DISTANCE, 0.000)
+  rcSettings.SetValue(k.SEEK_MAX_DISTANCE, 160.000)  
+]]
+  -- Maximum distance of travel beyond expected probe strike.
+  -- Safety measure for gross over travel.
+  rcSettings.SetValue(k.SEEK_OVERSHOOT, 2.0)
 
-  -- Feedrate for the initial(seek) probe.
-  rcSettings.SetValue(k.SEEK_FEED_RATE, 0.0)
+-- Feedrate for the initial(seek) probe.
+  rcSettings.SetValue(k.SEEK_FEED_RATE, 1000.0)
 
   -- Distance to retreat after trigger, before a subsequent(set) probe.
-  rcSettings.SetValue(k.SEEK_RETREAT, 0.000)
+  rcSettings.SetValue(k.SEEK_RETREAT, 3.000)
 
   -- Feedrate for any subsequent(set) probe.
-  rcSettings.SetValue(k.SET_FEED_RATE, 0.0)
-
+  rcSettings.SetValue(k.SET_FEED_RATE, 50.0)
 
   -- Tool Recognition Settings
 

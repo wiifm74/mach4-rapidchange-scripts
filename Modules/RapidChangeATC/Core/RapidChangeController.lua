@@ -19,7 +19,23 @@ local inst = mc.mcGetInstance()
 
 local LINEAR_TO_MACH = "g90g53g1"
 local LINEAR_INCREMENTAL = "g91g1"
+--[[
+-- we should be validating the g31 code against the possible signals that Mach 4 has
+local ProbeSigTable = {
+		[31] = mc.ISIG_PROBE,
+		[31.0] = mc.ISIG_PROBE,
+		[31.1] = mc.ISIG_PROBE1,
+		[31.2] = mc.ISIG_PROBE2,
+		[31.3] = mc.ISIG_PROBE3}
+	local ProbeSignal = ProbeSigTable[code]
+	if (ProbeSignal == nil) then
+		mc.mcCntlSetLastError(inst, "ERROR: Invalid probing G code")
+		mc.mcCntlEStop(inst)
+		do return end
+	end
+]]
 local PROBE = "g90g31"
+local PROBE_INCREMENTAL = "g91g31"
 local RAPID_INCREMENTAL = "g91g0"
 local RAPID_TO_MACH = "g90g53g0"
 local ACTIVATE_TLO = "g43"
@@ -153,10 +169,13 @@ end
 
 function RapidChangeController.SetTLO(tool)
 	local offset = getProbeMachPosZ()
-	local rc = mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, tool, offset)
+	local rc = mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, tool, offset - zSetter)
 	rcErrors.GuardAPIError(rc)
+	mc.mcCntlSetLastError(inst, string.format("Tool length = %.3f", mc.mcToolGetData(inst,mc.MTOOL_MILL_HEIGHT, tool)))
+	
 	--TODO: Should we dwell here? Not sure how to handle this. Mach4 docs say the
 	--tool offset shouldn't be changed while gcode is running. Can we safely work around this?
+	--Comment from Dennis:  Every bit of user code for tool length probing that i have seen uses this method without any workaround
 end
 
 function RapidChangeController.CoolantStop()
@@ -247,21 +266,50 @@ function RapidChangeController.LinearToMachCoords_Z_Z(zPos1, zPos2, feed)
 	)
 end
 
-function RapidChangeController.ProbeDown(maxDistance, feed)
-	if maxDistance < 0 then
-		maxDistance = maxDistance * -1
+function RapidChangeController.ProbeDown(incDistance, feed)
+	if incDistance > 0 then
+		incDistance = incDistance * -1
 	end
 
-	local currentZPos = getAxisPos(k.Z_AXIS)
-	local targetZPos = currentZPos - maxDistance
-
-	executeLines(line(PROBE, z(targetZPos), f(feed)))
+	executeLines(line(PROBE_INCREMENTAL, z(incDistance), f(feed)))
 end
 
 function RapidChangeController.GetProbeStrikeStatus()
+	
 	local didStrike, rc = mc.mcCntlProbeGetStrikeStatus(inst)
 	rcErrors.GuardAPIError(rc)
 	return didStrike
+end
+
+function RapidChangeController.CheckProbe(state, code)
+	local inst = mc.mcGetInstance()
+	local check = true
+	local ProbeSigTable = {
+		[31] = mc.ISIG_PROBE,
+		[31.0] = mc.ISIG_PROBE,
+		[31.1] = mc.ISIG_PROBE1,
+		[31.2] = mc.ISIG_PROBE2,
+		[31.3] = mc.ISIG_PROBE3}
+	local ProbeSignal = ProbeSigTable[code]
+	if (ProbeSignal == nil) then
+		check = false
+		--mc.mcCntlSetLastError(inst, "ERROR: Invalid probing G code")
+		--mc.mcCntlEStop(inst)
+		do return end
+	end
+	------------- Check Probe -------------
+	local hsig = mc.mcSignalGetHandle(inst, ProbeSignal)
+	local ProbeState = mc.mcSignalGetState(hsig)
+	--local errmsg = "ERROR: No contact with probe"
+	if (state == 1) then
+	--	errmsg = "ERROR: Probe obstructed"
+	end
+	if (ProbeState == state) then
+	--	mc.mcCntlSetLastError(inst, errmsg)
+	--	mc.mcCntlEStop(inst)
+		check = false
+	end
+	return check
 end
 
 function RapidChangeController.RapidToMachCoord(axis, pos)
