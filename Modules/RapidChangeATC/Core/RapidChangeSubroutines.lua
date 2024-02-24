@@ -389,29 +389,26 @@ end
 -- Should only be called from m6 or after SetupToolTouchOff in m131.
 function RapidChangeSubroutines.Execute_ToolTouchOff()
   
-  if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
-    
-	rcCntl.RapidToMachCoord_Z(zSafeClearance)
-    return
+	if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
+		rcCntl.RapidToMachCoord_Z(zSafeClearance)
+    	return end
 	
-  end
-	
-	local probeCode = 31
-	
+	local probeCode = 31  -- Comment: Massive shortcut until settings and verification are implemented
+
 	-- move to probe xy position at zSeekStart plane
 	rcCntl.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
 	
 	--fast
 	-- confirm probe is free
 	rc = rcCntl.CheckProbe(1, probeCode) 
-	if not rc then do return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
 	
 	-- seek tool setter surface
 	rcCntl.ProbeDown(zSetter - zSeekStart - seekOvershoot, seekFeed)
 	
 	-- confirm probe strike
 	rc = rcCntl.CheckProbe(0, probeCode) 
-	if not rc then do return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
 	
 	-- retract
 	rcCntl.LinearIncremental_Z(seekRetreat, seekFeed)
@@ -419,14 +416,14 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	--slow
 	-- confirm probe is free
 	rc = rcCntl.CheckProbe(1, probeCode) 
-	if not rc then do return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
 	
 	-- seek tool setter surface
 	rcCntl.ProbeDown(-seekRetreat - seekOvershoot, setFeed)
 	
 	-- confirm probe strike
 	rc = rcCntl.CheckProbe(0, probeCode) 
-	if not rc then do return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
 	
 	-- retract
 	rcCntl.RapidToMachCoord_Z(zSafeClearance)
