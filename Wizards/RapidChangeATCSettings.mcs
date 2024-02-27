@@ -1,7 +1,7 @@
 local inst = mc.mcGetInstance()
 
 machDir = mc.mcCntlGetMachDir(inst)
-package.path = machDir .. "\\Modules\\RapidChangeATC\\Core\\?.lua"
+package.path = machDir .. "\\Modules\\RapidChangeATC\\Core\\?.lua;" .. machDir .. "\\Modules\\RapidChangeATC\\Core\\?.mcc"
 
 if package.loaded.RapidChangeConstants == nil then rcConstants = require "RapidChangeConstants" end
 if package.loaded.RapidChangeSettings == nil then rcSettings = require "RapidChangeSettings" end

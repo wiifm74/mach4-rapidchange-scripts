@@ -401,14 +401,14 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	--fast
 	-- confirm probe is free
 	rc = rcCntl.CheckProbe(1, probeCode) 
-	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end
 	
 	-- seek tool setter surface
 	rcCntl.ProbeDown(zSetter - zSeekStart - seekOvershoot, seekFeed)
 	
 	-- confirm probe strike
 	rc = rcCntl.CheckProbe(0, probeCode) 
-	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
 	
 	-- retract
 	rcCntl.LinearIncremental_Z(seekRetreat, seekFeed)
@@ -416,14 +416,14 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	--slow
 	-- confirm probe is free
 	rc = rcCntl.CheckProbe(1, probeCode) 
-	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end
 	
 	-- seek tool setter surface
 	rcCntl.ProbeDown(-seekRetreat - seekOvershoot, setFeed)
 	
 	-- confirm probe strike
 	rc = rcCntl.CheckProbe(0, probeCode) 
-	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
 	
 	-- retract
 	rcCntl.RapidToMachCoord_Z(zSafeClearance)
