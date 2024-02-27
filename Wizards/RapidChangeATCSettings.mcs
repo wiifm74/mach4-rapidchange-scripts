@@ -1,0 +1,267 @@
+local inst = mc.mcGetInstance()
+
+machDir = mc.mcCntlGetMachDir(inst)
+package.path = machDir .. "\\Modules\\RapidChangeATC\\Core\\?.lua"
+
+if package.loaded.RapidChangeConstants == nil then rcConstants = require "RapidChangeConstants" end
+if package.loaded.RapidChangeSettings == nil then rcSettings = require "RapidChangeSettings" end
+
+local k = rcConstants
+
+function GetNextID()
+    m_id = m_id+1
+    return m_id
+end
+--global var to hold the frame
+frame = nil
+panel = nil
+m_id = 0
+m_iniName = "RapidChangeATC"
+
+settings = nil
+
+function SaveSetting(key, value)
+	--settings[]
+end
+
+function HandleInputEvents(event)
+    local name = event:GetEventObject():DynamicCast("wxWindow"):GetName()
+	value = event:GetString()
+    frame:SetStatusText(string.format("%s: %s - updated to '%s'", id, name, value), 0)
+end
+
+function HandleIndexEvents(event)
+    local name = event:GetEventObject():DynamicCast("wxWindow"):GetName()
+	value = event:GetSelection()
+    frame:SetStatusText(string.format("%s - selected item %d '%s'",  name, value, event:GetString()), 0)
+end
+
+function CreateOneColumnInput(txt, cntrl)
+	
+	-- txt might be used later
+	local s = wx.wxBoxSizer( wx.wxVERTICAL )
+	
+	s:Add(cntrl, 1, wx.wxCENTER, 5)
+	
+	s:SetMinSize(250,30) -- force it to be some reasonable size
+	
+	return s
+	
+end
+
+function CreateTwoColumnInput(txt, cntrl)
+	
+	local s = wx.wxGridSizer(0,2,5,5)
+	local t = wx.wxStaticText(panel, wx.wxID_ANY, tostring(txt))
+	
+	s:Add(t, 1, wx.wxCENTER, 5)
+	s:Add(cntrl, 1, wx.wxCENTER, 5)
+	
+	s:SetMinSize(250,30) -- force it to be some reasonable size
+	
+	return s
+	
+end
+
+AddUIControl = {
+		[k.INPUT_CONTROL] = function(setting)
+			id = GetNextID()
+			local label = tostring(setting.label)
+			local iCtrl = wx.wxTextCtrl(panel, id, tostring(setting.value), wx.wxDefaultPosition, wx.wxSize(125,25), wx.wxTE_PROCESS_ENTER)
+			local iSizer = CreateTwoColumnInput(label, iCtrl)
+			frame:Connect(id, wx.wxEVT_COMMAND_TEXT_UPDATED, HandleInputEvents)
+			return iSizer, iCtrl
+		end,
+		[k.CHECK_CONTROL] = function(setting)
+			local id = GetNextID()
+			local label = tostring(setting.label)
+			local checkBox = wx.wxCheckBox(panel, id, label, wx.wxDefaultPosition, wx.wxDefaultSize)
+			checkBox:SetValue(setting.value)
+			local iSizer = CreateOneColumnInput(label, checkBox)
+			frame:Connect(id, wx.wxEVT_COMMAND_CHOICE_SELECTED, HandleIndexEvents)
+			return iSizer, checkBox
+		end,
+		[k.RADIO_CONTROL] = function(setting)
+			return AddUIControl[k.CHOICE_CONTROL] ( setting )
+		end,
+		[k.SELECT_CONTROL] = function(setting)
+			return AddUIControl[k.CHOICE_CONTROL] ( setting )
+		end,
+		[k.LISTBOX_CONTROL] = function(setting)
+			return AddUIControl[k.CHOICE_CONTROL] ( setting )
+		end,
+		[k.CHOICE_CONTROL] = function(setting)
+			local id = GetNextID()
+			local label = tostring(setting.label)
+			local choice = wx.wxChoice(panel, id, wx.wxDefaultPosition, wx.wxSize(125,25), setting.optionLabels)
+			choice:SetSelection(setting.value)
+			local iSizer = CreateTwoColumnInput(label, choice)
+			frame:Connect(id, wx.wxEVT_COMMAND_CHOICE_SELECTED, HandleIndexEvents)
+			return iSizer, choice
+		end,
+		[k.SPIN_CONTROL] = function(setting)
+			local id = GetNextID()
+			local label = tostring(setting.label)
+			local spinCtrl = wx.wxSpinCtrl(panel, id, "wxSpinCtrl", wx.wxDefaultPosition, wx.wxSize(125,25))
+			spinCtrl:SetRange(0,12)
+			spinCtrl:SetValue(setting.value)
+			local iSizer = CreateTwoColumnInput(label, spinCtrl) 
+			frame:Connect(id, wx.wxEVT_COMMAND_SPINCTRL_UPDATED, HandleIndexEvents)
+			return iSizer, spinCtrl
+		end
+}
+
+AddUISetting = {
+
+	[k.DISTANCE_SETTING] = 	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.UDISTANCE_SETTING] = function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.FEED_SETTING] =  	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.RPM_SETTING] =  		function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.MCODE_SETTING] =  	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.OPTION_SETTING] =  	function( setting )
+		local sCntrlType = k.CHOICE_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.SWITCH_SETTING] =  	function( setting )
+		local sCntrlType = k.CHECK_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.COUNT_SETTING] =  	function( setting )
+		local sCntrlType = k.SPIN_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	--[[
+	[k.PORT_SETTING] =  	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	[k.PIN_SETTING] =  	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end,
+	]]
+	[k.DWELL_SETTING] =  	function( setting )
+		local sCntrlType = k.INPUT_CONTROL
+		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return sSizer, sCntrl, sCntrlType
+	end
+		
+}
+
+function main()
+	
+	frame = wx.wxFrame(wx.NULL, wx.wxID_ANY,  m_iniName .. " Settings Wizard")
+	
+	frame:Connect(wx.wxEVT_CLOSE_WINDOW,
+		function(event)
+			event:Skip()
+		end
+	)
+	
+	local fileMenu = wx.wxMenu()
+	ID_SAVE = GetNextID()
+	fileMenu:Append(ID_SAVE, "&Save", "Save settings")
+	ID_SAVE_EXIT = GetNextID()
+    fileMenu:Append(ID_SAVE_EXIT, "Save & exit", "Save settings and exit")
+    fileMenu:AppendSeparator()
+    fileMenu:Append(wx.wxID_EXIT, "E&xit", "Quit without saving")
+
+    local helpMenu = wx.wxMenu()
+    helpMenu:Append(wx.wxID_ABOUT, "&About", "About RapidChange ATC Settings Wizard")
+
+    local menuBar = wx.wxMenuBar()
+    menuBar:Append(fileMenu, "&File")
+    menuBar:Append(helpMenu, "&Help")
+    frame:SetMenuBar(menuBar)
+
+    frame:CreateStatusBar(1)
+    frame:SetStatusText("RapidChangeATC Settings Wizard", 0)
+	
+    frame:Connect(ID_SAVE, wx.wxEVT_COMMAND_MENU_SELECTED,
+		function (event) 
+			rcSettings.SaveUISettings()
+		end
+	)
+	frame:Connect(ID_SAVE_EXIT, wx.wxEVT_COMMAND_MENU_SELECTED,
+		function (event) 
+			rcSettings.SaveUISettings()
+			rcSettings.UnregisterUIControls()
+			frame:Close(true)
+		end
+	)
+
+    frame:Connect(wx.wxID_EXIT, wx.wxEVT_COMMAND_MENU_SELECTED,
+		function (event)
+			rcSettings.UnregisterUIControls()
+			frame:Close(true)
+		end
+	)
+
+    -- connect the selection event of the about menu item
+    frame:Connect(wx.wxID_ABOUT, wx.wxEVT_COMMAND_MENU_SELECTED,
+        function (event)
+            wx.wxMessageBox('Single column version of RapidChange ATC Settings Wizard\n'  ..
+                            'Be careful as there is no data validation if you enter incorrect values.',
+                            "About RapidChange ATC Settings Wizard",
+                            wx.wxOK + wx.wxICON_INFORMATION,
+                            frame)
+        end
+	)
+	
+	panel = wx.wxScrolledWindow( frame, wx.wxID_ANY, wx.wxDefaultPosition, wx.wxDefaultSize, wx.wxHSCROLL + wx.wxVSCROLL )
+	panel:SetScrollRate( 5, 5 )
+	
+	sizer = wx.wxBoxSizer( wx.wxVERTICAL )
+	
+	settings = rcSettings.GetUISettingsList()
+	
+	for i=1,#settings do
+		
+		local setting = settings[i] 
+		local s, uiControl, uiControlType = AddUISetting[setting.settingType ]( setting )
+		
+		sizer:Add(s, 0, wx.wxCENTER, 5)
+		rcSettings.RegisterUIControl(setting.key, uiControl, uiControlType)
+	
+	end
+	
+	rcSettings.SaveUISettings()
+	
+	rcSettings.UnregisterUIControls()
+	
+	panel:SetSizer( sizer )
+	panel:Layout()
+	sizer:Fit( panel )
+	
+	frame:Show()
+	
+end
+
+main()
+
+wx.wxGetApp():MainLoop()
