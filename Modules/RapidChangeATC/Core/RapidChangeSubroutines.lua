@@ -123,62 +123,6 @@ local function getMachToolNumbers()
   yUnload = getPocketPos(k.Y_AXIS, currentTool)
 end
 
--- local function getSettingValues()
---   --Mach4 Settings
---   units = rcCntl.GetDefaultUnits() / 10
-
---   --Tool Change Settings
---   alignment = rcSettings.GetValue(k.ALIGNMENT)
---   direction = rcSettings.GetValue(k.DIRECTION)
---   pocketCount = rcSettings.GetValue(k.POCKET_COUNT)
---   pocketOffset = rcSettings.GetValue(k.POCKET_OFFSET)
---   engageFeed = rcSettings.GetValue(k.ENGAGE_FEED_RATE)
---   rpmLoad = rcSettings.GetValue(k.LOAD_RPM)
---   rpmUnload = rcSettings.GetValue(k.UNLOAD_RPM)
---   xManual = rcSettings.GetValue(k.X_MANUAL)
---   yManual = rcSettings.GetValue(k.Y_MANUAL)
---   xPocket1 = rcSettings.GetValue(k.X_POCKET_1)
---   yPocket1 = rcSettings.GetValue(k.Y_POCKET_1)
---   xLoad = getPocketPos(k.X_AXIS, selectedTool)
---   yLoad = getPocketPos(k.Y_AXIS, selectedTool)
---   xUnload = getPocketPos(k.X_AXIS, currentTool)
---   yUnload = getPocketPos(k.Y_AXIS, currentTool)
---   zEngage = rcSettings.GetValue(k.Z_ENGAGE)
---   zMoveToLoad = rcSettings.GetValue(k.Z_MOVE_TO_LOAD)
---   zMoveToProbe = rcSettings.GetValue(k.Z_MOVE_TO_PROBE)
---   zRetreat = zEngage + convert(Z_RETREAT_OFFSET)
---   zSafeClearance = rcSettings.GetValue(k.Z_SAFE_CLEARANCE)
---   zSpindleStart = zEngage + convert(Z_SPINDLE_START_OFFSET)
-
---   --Tool Recognition Settings
---   toolRecEnabled = rcSettings.GetValue(k.TOOL_REC_ENABLED)
---   toolRecOverride = rcSettings.GetValue(k.TOOL_REC_OVERRIDE)
---   irInput = rcSettings.GetValue(k.IR_INPUT)
---   irBrokenState = rcSettings.GetValue(k.BEAM_BROKEN_STATE)
---   zZone1 = rcSettings.GetValue(k.Z_ZONE_1)
---   zZone2 = rcSettings.GetValue(k.Z_ZONE_2)
-
---   --Dust Cover Settings
---   coverEnabled = rcSettings.GetValue(k.COVER_ENABLED)
---   coverControl = rcSettings.GetValue(k.COVER_CONTROL)
---   coverAxis = rcSettings.GetValue(k.COVER_AXIS)
---   coverOpenPos = rcSettings.GetValue(k.COVER_OPEN_POS)
---   coverClosedPos = rcSettings.GetValue(k.COVER_CLOSED_POS)
---   coverOutput = rcSettings.GetValue(k.COVER_OUTPUT)
---   coverDwell = rcSettings.GetValue(k.COVER_DWELL)
-
---   --Touch Off Settings
---   touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
---   toolSetterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
---   maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
---   seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
---   seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
---   setFeed = rcSettings.GetValue(k.SET_FEED_RATE)
---   xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
---   ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
---   zSeekStart = rcSettings.GetValue(k.Z_SEEK_START)
--- end
-
 local function setupATCMotion()
   rcCntl.RecordState()
   rcCntl.SetDefaultUnits()

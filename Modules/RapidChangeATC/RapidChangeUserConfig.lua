@@ -94,7 +94,7 @@ function RapidChangeUserConfig.Load()
   -- Y Position (Machine Coordinates) of the center of the tool setter.
   rcSettings.SetValue(k.Y_TOOL_SETTER, 0.000)
   
-   -- Z Position (Machine Coordinates) of the center of the tool setter. 
+   -- Z Position (Machine Coordinates) of the top plate of the tool setter. 
   rcSettings.SetValue(k.Z_TOOL_SETTER, 0.000)  
 
   -- Z Position (Machine Coordinates) to begin the initial(seek) probe.
