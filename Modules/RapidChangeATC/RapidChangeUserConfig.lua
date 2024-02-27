@@ -89,29 +89,29 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.FALSE)
 
   -- X Position (Machine Coordinates) of the center of the tool setter.
-  rcSettings.SetValue(k.X_TOOL_SETTER, 2360.0)
+  rcSettings.SetValue(k.X_TOOL_SETTER, 0.000)
 
   -- Y Position (Machine Coordinates) of the center of the tool setter.
-  rcSettings.SetValue(k.Y_TOOL_SETTER, 1292.0)
+  rcSettings.SetValue(k.Y_TOOL_SETTER, 0.000)
   
    -- Z Position (Machine Coordinates) of the center of the tool setter. 
-  rcSettings.SetValue(k.Z_TOOL_SETTER, -160.000)  
+  rcSettings.SetValue(k.Z_TOOL_SETTER, 0.000)  
 
   -- Z Position (Machine Coordinates) to begin the initial(seek) probe.
   rcSettings.SetValue(k.Z_SEEK_START, 0.000)
 
   -- Maximum distance of travel beyond expected probe strike.
   -- Safety measure for gross over travel.
-  rcSettings.SetValue(k.SEEK_OVERSHOOT, 2.0)
+  rcSettings.SetValue(k.SEEK_OVERSHOOT, 0.000)
 
 -- Feedrate for the initial(seek) probe.
-  rcSettings.SetValue(k.SEEK_FEED_RATE, 1000.0)
+  rcSettings.SetValue(k.SEEK_FEED_RATE, 0.000)
 
   -- Distance to retreat after trigger, before a subsequent(set) probe.
-  rcSettings.SetValue(k.SEEK_RETREAT, 3.000)
+  rcSettings.SetValue(k.SEEK_RETREAT, 0.000)
 
   -- Feedrate for any subsequent(set) probe.
-  rcSettings.SetValue(k.SET_FEED_RATE, 50.0)
+  rcSettings.SetValue(k.SET_FEED_RATE, 0.000)
 
   -- Tool Recognition Settings
 

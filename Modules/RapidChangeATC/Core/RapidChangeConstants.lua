@@ -20,7 +20,7 @@ RapidChangeConstants.RADIO_CONTROL = 2
 RapidChangeConstants.SELECT_CONTROL = 3
 RapidChangeConstants.LISTBOX_CONTROL = 4
 RapidChangeConstants.CHOICE_CONTROL = 5
-
+RapidChangeConstants.SPIN_CONTROL = 6
 
 -- Options
 RapidChangeConstants.ALIGNMENT_OPTIONS = {
@@ -159,7 +159,7 @@ RapidChangeConstants.TOOL_REC_OVERRIDE = "ToolRecognitionOverride"
 -- RapidChangeConstants.IR_PORT = "IRPort"
 -- RapidChangeConstants.IR_PIN = "IRPin"
 RapidChangeConstants.IR_INPUT = "IRInput"
-RapidChangeConstants.BEAM_BROKEN_STATE = "BEAM_BROKEN_STATE"
+RapidChangeConstants.BEAM_BROKEN_STATE = "BeamBrokenState"
 RapidChangeConstants.Z_ZONE_1 = "ZZone1"
 RapidChangeConstants.Z_ZONE_2 = "ZZone2"
 
