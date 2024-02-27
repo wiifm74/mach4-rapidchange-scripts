@@ -250,10 +250,6 @@ function main()
 	
 	end
 	
-	rcSettings.SaveUISettings()
-	
-	rcSettings.UnregisterUIControls()
-	
 	panel:SetSizer( sizer )
 	panel:Layout()
 	sizer:Fit( panel )
