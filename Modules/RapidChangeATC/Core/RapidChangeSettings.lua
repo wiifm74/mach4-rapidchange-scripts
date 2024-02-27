@@ -39,6 +39,8 @@ local definitions = {
   createDefinition(k.Y_POCKET_1, "Y Pocket 1", "Y Position (Machine Coordinates) of the center of Pocket 1.", k.DISTANCE_SETTING),
   createDefinition(k.X_MANUAL, "X Manual", "X Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
   createDefinition(k.Y_MANUAL, "Y Manual", "Y Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
+  --createDefinition(k.Z_MANUAL, "Z Manual", "Z Position (Machine Coordinates) for manual tool changes.", k.DISTANCE_SETTING),
+  -- Comment:  I'd like to create the "Z Manual" setting for those that can't access the manual tool change position easily at k.Z_SAFE_CLEARANCE or 0
   createDefinition(k.Z_ENGAGE, "Z Engage", "Z Position (Machine Coordinates) for full engagement with the clamping nut.", k.DISTANCE_SETTING),
   createDefinition(k.Z_MOVE_TO_LOAD, "Z Move To Load", "Z Position to rise to after unloading a tool, before moving to the pocket for loading.", k.DISTANCE_SETTING),
   createDefinition(k.Z_MOVE_TO_PROBE, "Z Move To Probe", "Z Position to rise to after loading a tool, before moving to the tool setter for probing.", k.DISTANCE_SETTING),
@@ -49,12 +51,15 @@ local definitions = {
 
   --Tool Touch Off
   --TODO: Add Probe input selection for tool setter?
+  -- Comment:  there is the beginning of some code in RapidChangeController.lua
   createDefinition(k.TOUCH_OFF_ENABLED, "Tool Touch Off Enabled", "Calls the configured Tool Touch Off M-Code after loading a tool.", k.SWITCH_SETTING),
   createDefinition(k.TOOL_SETTER_INTERNAL, "Tool Setter Internal", "When enabled the dust cover will open for independent tool touch offs.", k.SWITCH_SETTING),
   createDefinition(k.X_TOOL_SETTER, "X Tool Setter", "X Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
   createDefinition(k.Y_TOOL_SETTER, "Y Tool Setter", "Y Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
+  createDefinition(k.Z_TOOL_SETTER, "Z Tool Setter", "Z Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
   createDefinition(k.Z_SEEK_START, "Z Seek Start", "Z Position (Machine Coordinates) to begin the initial(seek) probe.", k.DISTANCE_SETTING),
-  createDefinition(k.SEEK_MAX_DISTANCE, "Seek Max Distance", "Maximum distance of travel from Z Seek Start on initial probe. Used to calculate a probe target and guard against gross over travel.", k.UDISTANCE_SETTING),
+  --createDefinition(k.SEEK_MAX_DISTANCE, "Seek Max Distance", "Maximum distance of travel from Z Seek Start on initial probe. Used to calculate a probe target and guard against gross over travel.", k.UDISTANCE_SETTING),
+  createDefinition(k.SEEK_OVERSHOOT, "Seek Overshoot", "Maximum distance of travel beyond expected probe strike.", k.DISTANCE_SETTING),
   createDefinition(k.SEEK_FEED_RATE, "Seek Feed Rate", "Feedrate for the initial(seek) probe.", k.FEED_SETTING),
   createDefinition(k.SEEK_RETREAT, "Seek Retreat", "Distance to retreat after trigger, before a subsequent(set) probe.", k.UDISTANCE_SETTING),
   createDefinition(k.SET_FEED_RATE, "Set Feed Rate", "Feedrate for any subsequent(seek) probe.", k.FEED_SETTING),
@@ -188,37 +193,70 @@ end
 local registeredControls = {}
 
 function RapidChangeSettings.RegisterUIControl(key, control, controlType)
-  registeredControls[key] = {
-    control = control,
-    controlType = controlType
-  }
+	
+	table.insert(registeredControls, { key = key, control = control, controlType = controlType })
+
 end
 
-function RapidChangeSettings.UnregisterUIControl(key)
-  --Is this enough for memory management?
-  registeredControls[key] = nil
+function RapidChangeSettings.UnregisterUIControls()
+	
+	for _, v in ipairs(registeredControls) do
+		v.control = nil
+	end
+	
+	collectgarbage()
+end
+
+local ControlValueLib = {
+	
+	[k.INPUT_CONTROL] 	= function (control) return control:GetValue() end,
+	[k.CHECK_CONTROL] 	= function (control) if control:IsChecked() then return 1 else return 0 end end,
+	[k.RADIO_CONTROL] 	= function (control) return control:GetInt() end,
+	[k.SELECT_CONTROL] 	= function (control) return control:GetSelection() end,
+	[k.LISTBOX_CONTROL]	= function (control) return control:GetSelection() end,
+	[k.CHOICE_CONTROL] 	= function (control) return control:GetSelection() end,
+	[k.SPIN_CONTROL] 	= function (control) return control:GetValue() end
+
+}
+
+local function GetControlValue(control, controlType)
+	
+	return ControlValueLib[controlType] (control)
+	
 end
 
 --Call from UI to save user input
 --Settings will handle reading the input control and updating stored values
 function RapidChangeSettings.SaveUISettings()
-  --TODO: Save data from UI controls
+	
+	for _, v in ipairs(registeredControls) do
+		
+		local key = v.key
+		local cntrl = v.control
+		local cntrlType = v.controlType
+		local value = GetControlValue(cntrl, cntrlType)
+		RapidChangeSettings.SetValue(key, value)
+	end
+	
+	mc.mcProfileFlush(inst)
+	
 end
 
---Temporary function for configuring from a file
 function RapidChangeSettings.SetValue(key, value)
+  
   local definition = definitionMap[key]
 
   if definition.settingType == k.DISTANCE_SETTING or
-    definition.settingType == k.UDISTANCE_SETTING or
-    definition.settingType == k.FEED_SETTING or
-    definition.settingType == k.RPM_SETTING or
-    definition.settingType == k.DWELL_SETTING
+		definition.settingType == k.UDISTANCE_SETTING or
+		definition.settingType == k.FEED_SETTING or
+		definition.settingType == k.RPM_SETTING or
+		definition.settingType == k.DWELL_SETTING
   then
-    return mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, value)
+		mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, tonumber(value))
   else
-    return mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, value)
+		mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, math.tointeger(value))
   end
+  
 end
 
 return RapidChangeSettings

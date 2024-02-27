@@ -1,2 +1,0 @@
-Adding blank screen with simple button (RapidChangeATCButton.set) to open Mach4GUIR with RapidChangeATCSettings.set loaded
-Adding very basic RapidChangeATCSettings.set

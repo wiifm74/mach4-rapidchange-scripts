@@ -51,13 +51,14 @@ local coverDwell = 0
 --Touch Off Settings
 local touchOffEnabled = 0
 local toolSetterInternal = 0
-local maxDistance = 0
+local xSetter = 0
+local ySetter = 0
+local zSetter = 0
+local zSeekStart = 0
+local seekOvershoot = 0
 local seekRetreat = 0
 local seekFeed = 0
 local setFeed = 0
-local xSetter = 0
-local ySetter = 0
-local zSeekStart = 0
 
 --Mach Tool Numbers
 local currentTool = 0
@@ -238,13 +239,16 @@ function RapidChangeSubroutines.UpdateSettings()
   --Touch Off Settings
   touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
   toolSetterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
-  maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
-  seekRetreat = rcSettings.GetValue(k.SEEK_RETREAT)
-  seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
-  setFeed = rcSettings.GetValue(k.SET_FEED_RATE)
   xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
   ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
+  zSetter = rcSettings.GetValue(k.Z_TOOL_SETTER)  
   zSeekStart = rcSettings.GetValue(k.Z_SEEK_START)
+  --maxDistance = rcSettings.GetValue(k.SEEK_MAX_DISTANCE)
+  seekOvershoot = math.max(rcSettings.GetValue(k.SEEK_OVERSHOOT),(-1 * rcSettings.GetValue(k.SEEK_OVERSHOOT)))  
+  seekRetreat = math.max(rcSettings.GetValue(k.SEEK_RETREAT),(-1 * rcSettings.GetValue(k.SEEK_RETREAT)))
+  seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
+  setFeed = rcSettings.GetValue(k.SET_FEED_RATE)  
+   
 end
 
 --Tool change subroutines
@@ -384,49 +388,50 @@ end
 -- This function assumes that the spindle is already at a safe height!
 -- Should only be called from m6 or after SetupToolTouchOff in m131.
 function RapidChangeSubroutines.Execute_ToolTouchOff()
-  if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
-    rcCntl.RapidToMachCoord_Z(zSafeClearance)
-    return
-  end
+  
+	if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
+		rcCntl.RapidToMachCoord_Z(zSafeClearance)
+    	return end
+	
+	local probeCode = 31  -- Comment: Massive shortcut until settings and verification are implemented
 
-  -- local didStrike
-
-  rcCntl.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
-  -- didStrike = rcCntl.ProbeDown(maxDistance, seekFeed)
-  rcCntl.ProbeDown(maxDistance, seekFeed)
-  rcCntl.RapidIncremental_Z(seekRetreat)
-
-  local didStrike = rcCntl.GetProbeStrikeStatus()
-
-  if didStrike == k.FALSE then
-    RapidChangeSubroutines.OnFailedProbeStrike()
-    return
-  end
-
-  -- rcCntl.RapidIncremental_Z(seekRetreat)
-
-  --Adjust max distance for "set" function
-  --TODO: Clean this up
-  local multipler = 1
-  if units == k.INCHES then
-    multipler = 0.03937
-  end
-  maxDistance = seekRetreat + (1 * multipler)
-
-  -- didStrike = rcCntl.ProbeDown(maxDistance, setFeed)
-  rcCntl.ProbeDown(maxDistance, setFeed)
-  rcCntl.RapidToMachCoord_Z(zSafeClearance)
-
-  didStrike = rcCntl.GetProbeStrikeStatus()
-
-  if didStrike == k.FALSE then
-    RapidChangeSubroutines.OnFailedProbeStrike()
-    return
-  end
-
-  -- rcCntl.RapidToMachCoord_Z(zSafeClearance)
-
-  --TODO: Close dust cover
+	-- move to probe xy position at zSeekStart plane
+	rcCntl.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
+	
+	--fast
+	-- confirm probe is free
+	rc = rcCntl.CheckProbe(1, probeCode) 
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
+	
+	-- seek tool setter surface
+	rcCntl.ProbeDown(zSetter - zSeekStart - seekOvershoot, seekFeed)
+	
+	-- confirm probe strike
+	rc = rcCntl.CheckProbe(0, probeCode) 
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
+	
+	-- retract
+	rcCntl.LinearIncremental_Z(seekRetreat, seekFeed)
+	
+	--slow
+	-- confirm probe is free
+	rc = rcCntl.CheckProbe(1, probeCode) 
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end end
+	
+	-- seek tool setter surface
+	rcCntl.ProbeDown(-seekRetreat - seekOvershoot, setFeed)
+	
+	-- confirm probe strike
+	rc = rcCntl.CheckProbe(0, probeCode) 
+	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end end
+	
+	-- retract
+	rcCntl.RapidToMachCoord_Z(zSafeClearance)
+	
+	if coverEnabled == k.TRUE then
+		RapidChangeSubroutines.Execute_CoverClose()
+	end
+  
 end
 
 function RapidChangeSubroutines.LoadTool()
@@ -468,15 +473,24 @@ function RapidChangeSubroutines.LoadToolZero()
   --Do nothing
 end
 
-function RapidChangeSubroutines.OnFailedProbeStrike()
-  rcCntl.ShowStatus("Probe not triggered")
+function RapidChangeSubroutines.OnFailedProbeStatus(expectingStrike)
+	
+local message = ""
+
+	if (expectingStrike == k.TRUE) then
+		rcCntl.ShowStatus("Probe not triggered")
+		message = "Probe was not triggered.\nProcess aborted."
+	else
+		rcCntl.ShowStatus("Probe already triggered")
+		message = "Probe already triggered.\nProcess aborted."
+	end
+  
   rcCntl.RapidToMachCoord_Z(zSafeClearance)
 
-  if toolSetterInternal == k.TRUE then
+  if coverEnabled == k.TRUE and toolSetterInternal == k.TRUE then
     RapidChangeSubroutines.Execute_CoverClose()
   end
   
-  local message = "Probe was not triggered.\nProcess aborted."
   rcCntl.ShowBox(message)
   rcCntl.Terminate(message)
 end

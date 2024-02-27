@@ -4,6 +4,14 @@ local inst = mc.mcGetInstance()
 
 local function showAPIError(rc)
   --TODO: Handle ERROR_NOT_NOW from gcode execution better
+  --[[
+  Comment:  https://www.machsupport.com/forum/index.php?topic=36507.0
+            The workaround goes something like this:
+          1) Try the GcodeExecuteWait() API
+          2) Test the return code, if rc=0 the call has succeeded. If rc==MERROR_NOT_NOW then mc.mcCntlEnable(inst,0) mc.mcCntlEnable(inst,1)
+          3) Try the GcodeExecuteWait() API call again
+          4) By now the return code should be rc==MERROR_NO_ERROR
+  ]]
   local errorName = mc.mcCntlGetErrorString(inst, rc)
   local title = "MachAPI Error"
   local header = string.format("MachAPI Error: %i %s\n\n", rc, errorName)
