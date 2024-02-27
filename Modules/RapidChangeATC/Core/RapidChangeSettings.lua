@@ -193,37 +193,70 @@ end
 local registeredControls = {}
 
 function RapidChangeSettings.RegisterUIControl(key, control, controlType)
-  registeredControls[key] = {
-    control = control,
-    controlType = controlType
-  }
+	
+	table.insert(registeredControls, { key = key, control = control, controlType = controlType })
+
 end
 
-function RapidChangeSettings.UnregisterUIControl(key)
-  --Is this enough for memory management?
-  registeredControls[key] = nil
+function RapidChangeSettings.UnregisterUIControls()
+	
+	for _, v in ipairs(registeredControls) do
+		v.control = nil
+	end
+	
+	collectgarbage()
+end
+
+local ControlValueLib = {
+	
+	[k.INPUT_CONTROL] 	= function (control) return control:GetValue() end,
+	[k.CHECK_CONTROL] 	= function (control) if control:IsChecked() then return 1 else return 0 end end,
+	[k.RADIO_CONTROL] 	= function (control) return control:GetInt() end,
+	[k.SELECT_CONTROL] 	= function (control) return control:GetSelection() end,
+	[k.LISTBOX_CONTROL]	= function (control) return control:GetSelection() end,
+	[k.CHOICE_CONTROL] 	= function (control) return control:GetSelection() end,
+	[k.SPIN_CONTROL] 	= function (control) return control:GetValue() end
+
+}
+
+local function GetControlValue(control, controlType)
+	
+	return ControlValueLib[controlType] (control)
+	
 end
 
 --Call from UI to save user input
 --Settings will handle reading the input control and updating stored values
 function RapidChangeSettings.SaveUISettings()
-  --TODO: Save data from UI controls
+	
+	for _, v in ipairs(registeredControls) do
+		
+		local key = v.key
+		local cntrl = v.control
+		local cntrlType = v.controlType
+		local value = GetControlValue(cntrl, cntrlType)
+		RapidChangeSettings.SetValue(key, value)
+	end
+	
+	mc.mcProfileFlush(inst)
+	
 end
 
---Temporary function for configuring from a file
 function RapidChangeSettings.SetValue(key, value)
+  
   local definition = definitionMap[key]
 
   if definition.settingType == k.DISTANCE_SETTING or
-    definition.settingType == k.UDISTANCE_SETTING or
-    definition.settingType == k.FEED_SETTING or
-    definition.settingType == k.RPM_SETTING or
-    definition.settingType == k.DWELL_SETTING
+		definition.settingType == k.UDISTANCE_SETTING or
+		definition.settingType == k.FEED_SETTING or
+		definition.settingType == k.RPM_SETTING or
+		definition.settingType == k.DWELL_SETTING
   then
-    return mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, value)
+		mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, tonumber(value))
   else
-    return mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, value)
+		mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, math.tointeger(value))
   end
+  
 end
 
 return RapidChangeSettings
