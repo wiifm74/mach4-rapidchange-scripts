@@ -19,22 +19,48 @@ m_id = 0
 m_iniName = "RapidChangeATC"
 
 settings = nil
+storedSettings = {}
 
-function SaveSetting(key, value)
-	--settings[]
+function CreateUISetting(id, setting)
+	storedSettings[id] = setting
 end
 
-function HandleInputEvents(event)
-    local name = event:GetEventObject():DynamicCast("wxWindow"):GetName()
-	value = event:GetString()
-    frame:SetStatusText(string.format("%s: %s - updated to '%s'", id, name, value), 0)
+function OnUpdateUISettingValue(id, value)
+	
+	storedSettings[id].value = tonumber(value)
+	
+	local s = string.format("id: %i, value: %s", id, tostring(storedSettings[id].value))
+	frame:SetStatusText(s, 0)
+	
 end
 
-function HandleIndexEvents(event)
-    local name = event:GetEventObject():DynamicCast("wxWindow"):GetName()
-	value = event:GetSelection()
-    frame:SetStatusText(string.format("%s - selected item %d '%s'",  name, value, event:GetString()), 0)
+function OnUpdateUISettingSelectedIndex(id, selectedIndex)
+	
+	storedSettings[id].value = selectedIndex
+	storedSettings[id].selectedIndex = selectedIndex
+	
+	local s = string.format("id: %i, value: %i", id, storedSettings[id].value)
+	frame:SetStatusText(s, 0)
+	
 end
+
+function OnUpdateUISettingIsChecked(id, isChecked)
+	
+	storedSettings[id].value = isChecked
+	
+	local s = string.format("id: %i, value: %i", id, storedSettings[id].value)
+	frame:SetStatusText(s, 0)
+	
+end
+
+function UISaveSettings()
+	frame:SetStatusText("Saving...", 0)
+	for _, v in pairs(storedSettings) do
+		rcSettings.SetValue(v.key, v.value)
+	end
+	frame:SetStatusText("Settings Saved", 0)
+end
+
 
 function CreateOneColumnInput(txt, cntrl)
 	
@@ -69,45 +95,81 @@ AddUIControl = {
 			local label = tostring(setting.label)
 			local iCtrl = wx.wxTextCtrl(panel, id, tostring(setting.value), wx.wxDefaultPosition, wx.wxSize(125,25), wx.wxTE_PROCESS_ENTER)
 			local iSizer = CreateTwoColumnInput(label, iCtrl)
-			frame:Connect(id, wx.wxEVT_COMMAND_TEXT_UPDATED, HandleInputEvents)
-			return iSizer, iCtrl
+			panel:Connect( id, wx.wxEVT_COMMAND_TEXT_UPDATED, 
+				function(event)
+					OnUpdateUISettingValue( event:GetId(),iCtrl:GetValue() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end,
 		[k.CHECK_CONTROL] = function(setting)
 			local id = GetNextID()
 			local label = tostring(setting.label)
-			local checkBox = wx.wxCheckBox(panel, id, label, wx.wxDefaultPosition, wx.wxDefaultSize)
-			checkBox:SetValue(setting.value)
-			local iSizer = CreateOneColumnInput(label, checkBox)
-			frame:Connect(id, wx.wxEVT_COMMAND_CHOICE_SELECTED, HandleIndexEvents)
-			return iSizer, checkBox
+			local iCtrl = wx.wxCheckBox(panel, id, label, wx.wxDefaultPosition, wx.wxDefaultSize)
+			iCtrl:SetValue(setting.value)
+			local iSizer = CreateOneColumnInput(label, iCtrl)
+			panel:Connect( id, wx.wxEVT_COMMAND_CHECKBOX_CLICKED, 
+				function(event)
+					OnUpdateUISettingIsChecked( event:GetId(),iCtrl:isChecked() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end,
 		[k.RADIO_CONTROL] = function(setting)
-			return AddUIControl[k.CHOICE_CONTROL] ( setting )
+			local id = GetNextID()
+			local label = tostring(setting.label)
+			local iCtrl = wx.wxRadioBox(panel, id, label, wx.wxDefaultPosition, wx.wxDefaultSize)
+			iCtrl:SetValue(setting.value)
+			local iSizer = CreateOneColumnInput(label, iCtrl)
+			panel:Connect( id, wx.wxEVT_COMMAND_RADIOBOX_SELECTED, 
+				function(event)
+					OnUpdateUISettingIsChecked( event:GetId(),iCtrl:isChecked() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end,
 		[k.SELECT_CONTROL] = function(setting)
 			return AddUIControl[k.CHOICE_CONTROL] ( setting )
 		end,
 		[k.LISTBOX_CONTROL] = function(setting)
-			return AddUIControl[k.CHOICE_CONTROL] ( setting )
+			local id = GetNextID()
+			local label = tostring(setting.label)
+			local iCtrl = wx.wxListBox(panel, id, wx.wxDefaultPosition, wx.wxSize(125,#setting.optionLabels*25), setting.optionLabels)
+			iCtrl:SetSelection(setting.value)
+			local iSizer = CreateTwoColumnInput(label, iCtrl)
+			panel:Connect( id, wx.wxEVT_COMMAND_LISTBOX_SELECTED, 
+				function(event)
+					OnUpdateUISettingSelectedIndex( event:GetId(), iCtrl:GetSelection() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end,
 		[k.CHOICE_CONTROL] = function(setting)
 			local id = GetNextID()
 			local label = tostring(setting.label)
-			local choice = wx.wxChoice(panel, id, wx.wxDefaultPosition, wx.wxSize(125,25), setting.optionLabels)
-			choice:SetSelection(setting.value)
-			local iSizer = CreateTwoColumnInput(label, choice)
-			frame:Connect(id, wx.wxEVT_COMMAND_CHOICE_SELECTED, HandleIndexEvents)
-			return iSizer, choice
+			local iCtrl = wx.wxChoice(panel, id, wx.wxDefaultPosition, wx.wxSize(125,25), setting.optionLabels)
+			iCtrl:SetSelection(setting.value)
+			local iSizer = CreateTwoColumnInput(label, iCtrl)
+			panel:Connect( id, wx.wxEVT_COMMAND_CHOICE_SELECTED, 
+				function(event)
+					OnUpdateUISettingSelectedIndex( event:GetId(), iCtrl:GetSelection() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end,
 		[k.SPIN_CONTROL] = function(setting)
 			local id = GetNextID()
 			local label = tostring(setting.label)
-			local spinCtrl = wx.wxSpinCtrl(panel, id, "wxSpinCtrl", wx.wxDefaultPosition, wx.wxSize(125,25))
-			spinCtrl:SetRange(0,12)
-			spinCtrl:SetValue(setting.value)
-			local iSizer = CreateTwoColumnInput(label, spinCtrl) 
-			frame:Connect(id, wx.wxEVT_COMMAND_SPINCTRL_UPDATED, HandleIndexEvents)
-			return iSizer, spinCtrl
+			local iCtrl = wx.wxSpinCtrl(panel, id, label, wx.wxDefaultPosition, wx.wxSize(125,25))
+			iCtrl:SetRange(0,12)
+			iCtrl:SetValue(setting.value)
+			local iSizer = CreateTwoColumnInput(label, iCtrl) 
+			panel:Connect( id, wx.wxEVT_COMMAND_SPINCTRL_UPDATED,
+				function(event)
+					OnUpdateUISettingValue( event:GetId(),iCtrl:GetValue() ) 
+				end
+			)
+			return id, iSizer, iCtrl
 		end
 }
 
@@ -115,60 +177,60 @@ AddUISetting = {
 
 	[k.DISTANCE_SETTING] = 	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.UDISTANCE_SETTING] = function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.FEED_SETTING] =  	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.RPM_SETTING] =  		function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.MCODE_SETTING] =  	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.OPTION_SETTING] =  	function( setting )
 		local sCntrlType = k.CHOICE_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.SWITCH_SETTING] =  	function( setting )
 		local sCntrlType = k.CHECK_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.COUNT_SETTING] =  	function( setting )
 		local sCntrlType = k.SPIN_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	--[[
 	[k.PORT_SETTING] =  	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	[k.PIN_SETTING] =  	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end,
 	]]
 	[k.DWELL_SETTING] =  	function( setting )
 		local sCntrlType = k.INPUT_CONTROL
-		local sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
-		return sSizer, sCntrl, sCntrlType
+		local id, sSizer, sCntrl = AddUIControl[sCntrlType] ( setting )
+		return id, sSizer, sCntrl, sCntrlType
 	end
 		
 }
@@ -186,10 +248,13 @@ function main()
 	local fileMenu = wx.wxMenu()
 	ID_SAVE = GetNextID()
 	fileMenu:Append(ID_SAVE, "&Save", "Save settings")
+	fileMenu:AppendSeparator()
+	
 	ID_SAVE_EXIT = GetNextID()
     fileMenu:Append(ID_SAVE_EXIT, "Save & exit", "Save settings and exit")
     fileMenu:AppendSeparator()
-    fileMenu:Append(wx.wxID_EXIT, "E&xit", "Quit without saving")
+    
+	fileMenu:Append(wx.wxID_EXIT, "E&xit", "Quit without saving")
 
     local helpMenu = wx.wxMenu()
     helpMenu:Append(wx.wxID_ABOUT, "&About", "About RapidChange ATC Settings Wizard")
@@ -204,20 +269,23 @@ function main()
 	
     frame:Connect(ID_SAVE, wx.wxEVT_COMMAND_MENU_SELECTED,
 		function (event) 
-			rcSettings.SaveUISettings()
+			UISaveSettings()
+			--rcSettings.SaveUISettings()
 		end
 	)
+	
 	frame:Connect(ID_SAVE_EXIT, wx.wxEVT_COMMAND_MENU_SELECTED,
 		function (event) 
-			rcSettings.SaveUISettings()
-			rcSettings.UnregisterUIControls()
+			UISaveSettings()
+			--rcSettings.SaveUISettings()
+			--rcSettings.UnregisterUIControls()
 			frame:Close(true)
 		end
 	)
 
     frame:Connect(wx.wxID_EXIT, wx.wxEVT_COMMAND_MENU_SELECTED,
 		function (event)
-			rcSettings.UnregisterUIControls()
+			--rcSettings.UnregisterUIControls()
 			frame:Close(true)
 		end
 	)
@@ -243,17 +311,20 @@ function main()
 	for i=1,#settings do
 		
 		local setting = settings[i] 
-		local s, uiControl, uiControlType = AddUISetting[setting.settingType ]( setting )
+		local id, s, uiControl, uiControlType = AddUISetting[setting.settingType ]( setting )
 		
 		sizer:Add(s, 0, wx.wxCENTER, 5)
-		rcSettings.RegisterUIControl(setting.key, uiControl, uiControlType)
+		
+		CreateUISetting(id, setting)
 	
 	end
+	
+	--UISaveSettings()
 	
 	panel:SetSizer( sizer )
 	panel:Layout()
 	sizer:Fit( panel )
-	
+	frame:SetMinSize(wx.wxSize(300,750))
 	frame:Show()
 	
 end
