@@ -184,64 +184,6 @@ function RapidChangeSettings.GetUISettingsList()
   return settings
 end
 
---UIControl Registration
---Register the UI control upon construction, unregister upon destruction.
---This will allow for the handling of apapting control values to stored values to be handled by RapidChangeSettings.
---The UI can fetch the settings list and create whichever appropriate controls it chooses and let the
---settings worry about what to do with them. Indicate the control type used for the setting from the defined
---control type constants when registering a control.
-local registeredControls = {}
-
-function RapidChangeSettings.RegisterUIControl(key, control, controlType)
-	
-	table.insert(registeredControls, { key = key, control = control, controlType = controlType })
-
-end
-
-function RapidChangeSettings.UnregisterUIControls()
-	
-	for _, v in ipairs(registeredControls) do
-		v.control = nil
-	end
-	
-	collectgarbage()
-end
-
-local ControlValueLib = {
-	
-	[k.INPUT_CONTROL] 	= function (control) return control:GetValue() end,
-	[k.CHECK_CONTROL] 	= function (control) if control:IsChecked() then return 1 else return 0 end end,
-	[k.RADIO_CONTROL] 	= function (control) return control:GetInt() end,
-	[k.SELECT_CONTROL] 	= function (control) return control:GetSelection() end,
-	[k.LISTBOX_CONTROL]	= function (control) return control:GetSelection() end,
-	[k.CHOICE_CONTROL] 	= function (control) return control:GetSelection() end,
-	[k.SPIN_CONTROL] 	= function (control) return control:GetValue() end
-
-}
-
-local function GetControlValue(control, controlType)
-	
-	return ControlValueLib[controlType] (control)
-	
-end
-
---Call from UI to save user input
---Settings will handle reading the input control and updating stored values
-function RapidChangeSettings.SaveUISettings()
-	
-	for _, v in ipairs(registeredControls) do
-		
-		local key = v.key
-		local cntrl = v.control
-		local cntrlType = v.controlType
-		local value = GetControlValue(cntrl, cntrlType)
-		RapidChangeSettings.SetValue(key, value)
-	end
-	
-	mc.mcProfileFlush(inst)
-	
-end
-
 function RapidChangeSettings.SetValue(key, value)
   
   local definition = definitionMap[key]
