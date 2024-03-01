@@ -29,8 +29,8 @@ RapidChangeConstants.ALIGNMENT_OPTIONS = {
 }
 
 RapidChangeConstants.DIRECTION_OPTIONS = {
-  { value = RapidChangeConstants.POSITIVE, label = "Positive" },
   { value = RapidChangeConstants.NEGATIVE, label = "Negative" },
+  { value = RapidChangeConstants.POSITIVE, label = "Positive" },
 }
 
 RapidChangeConstants.COVER_AXIS_OPTIONS = {
@@ -95,8 +95,8 @@ RapidChangeConstants.INCHES = 20
 RapidChangeConstants.MILLIMETERS = 21
 
 -- Directions
+RapidChangeConstants.NEGATIVE = 0
 RapidChangeConstants.POSITIVE = 1
-RapidChangeConstants.NEGATIVE = -1
 
 --Axes
 RapidChangeConstants.X_AXIS = mc.X_AXIS
