@@ -147,23 +147,43 @@ end
 
 local definitionMap = buildDefinitionMap()
 
+function RapidChangeSettings.GetRequiredDataType( settingType)
+	
+	local ValueType = {
+		[k.DISTANCE_SETTING] 	= function ( ) return "float" end,
+		[k.UDISTANCE_SETTING] 	= function ( ) return "float" end,
+		[k.FEED_SETTING] 		= function ( ) return "float" end,
+		[k.RPM_SETTING] 		= function ( ) return "float" end,
+		[k.MCODE_SETTING] 		= function ( ) return "integer" end,
+		[k.OPTION_SETTING] 		= function ( ) return "integer" end,
+		[k.SWITCH_SETTING] 		= function ( ) return "integer" end,
+		[k.COUNT_SETTING] 		= function ( ) return "integer" end,
+		-- [k.PORT_SETTING] 	= function ( ) return "integer" end,
+		-- [k.PIN_SETTING] 		= function ( ) return "integer" end,
+		[k.DWELL_SETTING] 		= function ( ) return "float" end
+	}	
+	
+	return ValueType [ settingType ] ( )
+	
+end
 --Retrieve a setting's value
 function RapidChangeSettings.GetValue(key)
-  local definition = definitionMap[key]
+	
+	local definition = definitionMap[key]
 
-  if definition.settingType == k.DISTANCE_SETTING or
-    definition.settingType == k.UDISTANCE_SETTING or
-    definition.settingType == k.FEED_SETTING or
-    definition.settingType == k.RPM_SETTING or
-    definition.settingType == k.DWELL_SETTING
-  then
-    return mc.mcProfileGetDouble(inst, RC_SECTION, definition.key, definition.defaultValue)
-  else
-    return mc.mcProfileGetInt(inst, RC_SECTION, definition.key, definition.defaultValue)
-  end
+	if RapidChangeSettings.GetRequiredDataType( definition.settingType) == "float" then
+		return mc.mcProfileGetDouble(inst, RC_SECTION, definition.key, definition.defaultValue)
+	elseif RapidChangeSettings.GetRequiredDataType( definition.settingType) == "integer" then
+		return mc.mcProfileGetInt(inst, RC_SECTION, definition.key, definition.defaultValue)
+	elseif RapidChangeSettings.GetRequiredDataType( definition.settingType) == "string" then
+		return mc.mcProfileGetString(inst, RC_SECTION, definition.key, definition.defaultValue)
+	end
+	
 end
 
+
 function RapidChangeSettings.GetCurrentSettings()
+  
   local settings = {}
 
   for _, value in ipairs(definitions) do
@@ -171,10 +191,12 @@ function RapidChangeSettings.GetCurrentSettings()
   end
 
   return settings
+  
 end
 
 --Get an iterable list of settings for UI controls
 function RapidChangeSettings.GetUISettingsList()
+  
   local settings = {}
 
   for i, v in ipairs(definitions) do
@@ -182,22 +204,22 @@ function RapidChangeSettings.GetUISettingsList()
   end
 
   return settings
+  
 end
 
 function RapidChangeSettings.SetValue(key, value)
   
-  local definition = definitionMap[key]
+	local definition = definitionMap[key]
 
-  if definition.settingType == k.DISTANCE_SETTING or
-		definition.settingType == k.UDISTANCE_SETTING or
-		definition.settingType == k.FEED_SETTING or
-		definition.settingType == k.RPM_SETTING or
-		definition.settingType == k.DWELL_SETTING
-  then
-		mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, tonumber(value))
-  else
-		mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, math.tointeger(value))
-  end
+	if RapidChangeSettings.GetRequiredDataType( definition.settingType) == "float" then
+		return mc.mcProfileWriteDouble(inst, RC_SECTION, definition.key, value)
+		
+	elseif RapidChangeSettings.GetRequiredDataType( definition.settingType) == "integer" then
+		return mc.mcProfileWriteInt(inst, RC_SECTION, definition.key, value)
+		
+	elseif RapidChangeSettings.GetRequiredDataType( definition.settingType) == "string" then
+		return mc.mcProfileWriteString(inst, RC_SECTION, definition.key, value)
+	end
   
 end
 
