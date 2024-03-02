@@ -59,6 +59,8 @@ local seekOvershoot = 0
 local seekRetreat = 0
 local seekFeed = 0
 local setFeed = 0
+local toolDiameterOffset = 0
+local toolHeightSetterDiameter = 0
 
 --Mach Tool Numbers
 local currentTool = 0
@@ -247,7 +249,9 @@ function RapidChangeSubroutines.UpdateSettings()
   seekOvershoot = math.max(rcSettings.GetValue(k.SEEK_OVERSHOOT),(-1 * rcSettings.GetValue(k.SEEK_OVERSHOOT)))  
   seekRetreat = math.max(rcSettings.GetValue(k.SEEK_RETREAT),(-1 * rcSettings.GetValue(k.SEEK_RETREAT)))
   seekFeed = rcSettings.GetValue(k.SEEK_FEED_RATE)
-  setFeed = rcSettings.GetValue(k.SET_FEED_RATE)  
+  setFeed = rcSettings.GetValue(k.SET_FEED_RATE) 
+  toolDiameterOffset = rcSettings.GetValue(k.TOOL_DIAMETER_OFFSET)
+  toolHeightSetterDiameter = rcSettings.GetValue(k.TOOL_SETTER_DIAMETER)  
    
 end
 
@@ -394,9 +398,33 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
     	return end
 	
 	local probeCode = 31  -- Comment: Massive shortcut until settings and verification are implemented
+	
+	local xOffset = 0
+	local yOffset = 0
+	local toolDiameter = 0
+	
+	if (toolDiameterOffset == k.DISABLED) or (toolHeightSetterDiameter == 0) then
+		-- do nothing
+	else
+		toolRadius = mc.mcToolGetData(inst, mc.MTOOL_MILL_RAD, currentTool)  
+		if toolRadius >= ( toolHeightSetterDiameter / 2 ) then
+			if toolDiameterOFfset == k.X_AXIS_NEGATIVE then
+				xOffset = -1 * toolRadius
+			elseif toolDiameterOFfset == k.X_AXIS_POSITIVE then
+				xOffset = toolRadius
+			elseif toolDiameterOFfset == k.Y_AXIS_NEGATIVE then
+				YOffset = -1 * toolRadius
+			elseif toolDiameterOFfset == k.Y_AXIS_POSITIVE then
+				YOffset = toolRadius
+			else -- we have a problem
+			end
+		else
+			-- do nothing
+		end
+	end
 
 	-- move to probe xy position at zSeekStart plane
-	rcCntl.RapidToMachCoords_XY_Z(xSetter, ySetter, zSeekStart)
+	rcCntl.RapidToMachCoords_XY_Z(xSetter + xOffset, ySetter + yOffset, zSeekStart)
 	
 	--fast
 	-- confirm probe is free
