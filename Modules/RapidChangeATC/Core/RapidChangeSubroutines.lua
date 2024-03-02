@@ -399,28 +399,32 @@ end
 -- Should only be called from m6 or after SetupToolTouchOff in m131.
 function RapidChangeSubroutines.Execute_ToolTouchOff()
   
+  
 	if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
 		rcCntl.RapidToMachCoord_Z(zSafeClearance)
     	return end
 	
+	local inst = mc.mcGetInstance()
 	local probeCode = 31  -- Comment: Massive shortcut until settings and verification are implemented
 	
 	local xOffset = 0
 	local yOffset = 0
 	local toolDiameter = 0
+	local toolDescription = ""
+	local toolLength = 0
 	
 	if (toolDiameterOffset == k.DISABLED) or (toolHeightSetterDiameter == 0) then
 		-- do nothing
 	else
 		toolRadius = mc.mcToolGetData(inst, mc.MTOOL_MILL_RAD, currentTool)  
 		if toolRadius >= ( toolHeightSetterDiameter / 2 ) then
-			if toolDiameterOFfset == k.X_AXIS_NEGATIVE then
+			if toolDiameterOffset == k.X_AXIS_NEGATIVE then
 				xOffset = -1 * toolRadius
-			elseif toolDiameterOFfset == k.X_AXIS_POSITIVE then
+			elseif toolDiameterOffset == k.X_AXIS_POSITIVE then
 				xOffset = toolRadius
-			elseif toolDiameterOFfset == k.Y_AXIS_NEGATIVE then
+			elseif toolDiameterOffset == k.Y_AXIS_NEGATIVE then
 				YOffset = -1 * toolRadius
-			elseif toolDiameterOFfset == k.Y_AXIS_POSITIVE then
+			elseif toolDiameterOffset == k.Y_AXIS_POSITIVE then
 				YOffset = toolRadius
 			else -- we have a problem
 			end
@@ -459,6 +463,9 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	rc = rcCntl.CheckProbe(0, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
 	
+	toolDescription = mc.mcToolGetDesc(inst, currentTool)
+	toolLength = mc.mcToolGetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool)
+	rcCntl.ShowStatus(string.format("Tool: %i %s length set to %.4f", currentTool, toolDescription, toolLength))
 	-- retract
 	rcCntl.RapidToMachCoord_Z(zSafeClearance)
 	
@@ -561,7 +568,7 @@ function RapidChangeSubroutines.Teardown_m6()
   rcCntl.SetCurrentTool(currentTool)
 
   if touchOffEnabled == k.ENABLED then
-    rcCntl.SetTLO(currentTool)
+    rcCntl.SetTLO(currentTool, zSetter)
     rcCntl.ActivateTLO(currentTool)
   end
 end
@@ -572,7 +579,7 @@ function RapidChangeSubroutines.Teardown_ToolTouchOff()
   end
 
   rcCntl.RestoreState()
-  rcCntl.SetTLO(currentTool)
+  rcCntl.SetTLO(currentTool, zSetter)
   rcCntl.ActivateTLO(currentTool)
 end
 

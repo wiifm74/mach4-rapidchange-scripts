@@ -129,7 +129,6 @@ RapidChangeConstants.PROBE_2 = 2
 RapidChangeConstants.PROBE_3 = 3
 
 --Tool DiameterOffset
-RapidChangeConstants.DISABLED = 0
 RapidChangeConstants.X_AXIS_NEGATIVE = 1
 RapidChangeConstants.X_AXIS_POSITIVE = 2
 RapidChangeConstants.Y_AXIS_NEGATIVE = 3
