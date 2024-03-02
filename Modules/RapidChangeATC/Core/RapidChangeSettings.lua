@@ -63,7 +63,7 @@ local definitions = {
   createDefinition(k.SEEK_FEED_RATE, "Seek Feed Rate", "Feedrate for the initial(seek) probe.", k.FEED_SETTING),
   createDefinition(k.SEEK_RETREAT, "Seek Retreat", "Distance to retreat after trigger, before a subsequent(set) probe.", k.UDISTANCE_SETTING),
   createDefinition(k.SET_FEED_RATE, "Set Feed Rate", "Feedrate for any subsequent(seek) probe.", k.FEED_SETTING),
-  createDefinition(k.TOOL_DIAMETER_OFFSET, "Tool Diameter Offset", "Offset calculation to allow for tool diameters larger than tool height setter diameter.", k.FEED_SETTING),
+  createOptionDefinition(k.TOOL_DIAMETER_OFFSET, "Tool Diameter Offset", "Offset calculation to allow for tool diameters larger than tool height setter diameter.", k.TOOL_DIAMETER_OFFSET_OPTIONS),
 createDefinition(k.TOOL_SETTER_DIAMETER, "Tool Setter Diameter", "Diameter of tool height setter.", k.DISTANCE_SETTING),  
 
   --Tool Recognition
@@ -162,7 +162,7 @@ function RapidChangeSettings.GetRequiredDataType( settingType)
 		[k.COUNT_SETTING] 		= function ( ) return "integer" end,
 		-- [k.PORT_SETTING] 	= function ( ) return "integer" end,
 		-- [k.PIN_SETTING] 		= function ( ) return "integer" end,
-		[k.DWELL_SETTING] 		= function ( ) return "float" end
+		[k.DWELL_SETTING] 		= function ( ) return "float" end,
 	}	
 	
 	return ValueType [ settingType ] ( )
