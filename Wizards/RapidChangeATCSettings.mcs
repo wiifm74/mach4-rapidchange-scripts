@@ -138,6 +138,7 @@ function UISaveSettings( )
 		rcSettings.SetValue( v.key, v.value )
 	end
 
+	mc.mcProfileFlush(inst)
 	rcSub.UpdateSettings( )
 	
 	frame:SetStatusText( "Settings Saved", 0 )

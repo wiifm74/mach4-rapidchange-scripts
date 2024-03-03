@@ -182,6 +182,7 @@ end
 -- end
 
 local function setupATCMotion()
+  RapidChangeSubroutines.UpdateSettings()
   rcCntl.RecordState()
   rcCntl.SetDefaultUnits()
   rcCntl.CoolantStop()
@@ -398,7 +399,6 @@ end
 -- This function assumes that the spindle is already at a safe height!
 -- Should only be called from m6 or after SetupToolTouchOff in m131.
 function RapidChangeSubroutines.Execute_ToolTouchOff()
-  
   
 	if currentTool == 0 or (touchOffEnabled == k.DISABLED and rcSignals.GetToolChangeState() == k.ACTIVE) then
 		rcCntl.RapidToMachCoord_Z(zSafeClearance)
