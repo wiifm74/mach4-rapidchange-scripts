@@ -438,9 +438,12 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	rc = rcCntl.CheckProbe(0, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
 	
+	rcCntl.SetTLO(currentTool, zSetter)
+	
 	toolDescription = mc.mcToolGetDesc(inst, currentTool)
 	toolLength = mc.mcToolGetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool)
 	rcCntl.ShowStatus(string.format("Tool: %i %s length set to %.4f", currentTool, toolDescription, toolLength))
+	
 	-- retract
 	rcCntl.RapidToMachCoord_Z(zSafeClearance)
 	
