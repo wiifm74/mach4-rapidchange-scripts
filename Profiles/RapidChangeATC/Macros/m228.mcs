@@ -1,3 +1,53 @@
 function m228()
+	
+	local gcode = "g53 g90 g0 x2557" --"\ng53 g90 g0 x2500"
 
+	local inst = mc.mcGetInstance()
+	local limitsoverbefore, enablesoftlimitsbefore, rc
+	
+	local function SetSoftlimits(mode)
+		for i = 0, mc.MC_MAX_AXES, 1 do --start, end, increment
+			axisenabled, rc = mc.mcAxisIsEnabled(inst, i)
+			if axisenabled == 1 then
+				mc.mcSoftLimitSetState(inst, i, mode)
+			end
+		end
+	end	
+	
+	local function GetSoftlimits()
+		local limitsenabled = false
+		for i = 0, mc.MC_MAX_AXES, 1 do --start, end, increment
+			axisenabled, rc = mc.mcAxisIsEnabled(inst, i)
+			if axisenabled == 1 then
+				limitsenabled, rc = mc.mcSoftLimitGetState(inst, i)
+				if limitsenabled then
+					break
+				end
+			end
+		end
+		return limitsenabled
+	end
+	
+	local hSig = mc.mcSignalGetHandle(inst, mc.ISIG_LIMITOVER)
+	limitsoverbefore, rc = mc.mcSignalGetState(inst, hSig)
+	mc.mcSignalSetState(hSig, 1)
+	
+	hSig = mc.mcSignalGetHandle(inst, mc.OSIG_SOFTLIMITS_ON)
+	enablesoftlimitsbefore = GetSoftlimits()
+	SetSoftlimits(mc.MC_OFF)
+	mc.mcSignalSetState(hSig, 0)
+	
+	mc.mcCntlGcodeExecuteWait(inst, gcode)
+	
+	SetSoftlimits(enablesoftlimitsbefore)
+	mc.mcSignalSetState(hSig, enablesoftlimitsbefore)
+	
+	hSig = mc.mcSignalGetHandle(inst, mc.ISIG_LIMITOVER)
+	mc.mcSignalSetState(hSig, limitsoverbefore)
+	
+	
+end
+
+if (mc.mcInEditor() == 1) then
+	m228()
 end
