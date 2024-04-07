@@ -246,6 +246,7 @@ end
 
 function RapidChangeSubroutines.ConfirmLoad_ToolRecognition()
   rcCntl.RapidToMachCoord_Z(zZone1)
+  wx.wxMillisleep(100)
 
   local irInputState = rcSignals.GetInputState(irInput)
 
@@ -254,6 +255,7 @@ function RapidChangeSubroutines.ConfirmLoad_ToolRecognition()
     rcCntl.ShowBox(string.format("Tool %i failed Zone 1 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\n\n", selectedTool, selectedTool))
   else --Next check
     rcCntl.RapidToMachCoord_Z(zZone2)
+    wx.wxMillisleep(100)
 
     irInputState = rcSignals.GetInputState(irInput)
     if irInputState == irBrokenState then --Failure Zone 2
@@ -290,13 +292,16 @@ end
 
 function RapidChangeSubroutines.ConfirmUnload_ToolRecognition()
   rcCntl.RapidToMachCoord_Z(zZone1)
+  wx.wxMillisleep(100)
 
   local irInputState = rcSignals.GetInputState(irInput)
 
   if irInputState == irBrokenState then --We still have a tool, try again
     rcCntl.LinearToMachCoords_Z_Z(zEngage, zRetreat, engageFeed)
     rcCntl.RapidToMachCoord_Z(zZone1)
+    wx.wxMillisleep(100)
     rcCntl.SpinStop()
+
 
     irInputState = rcSignals.GetInputState(irInput)
     if irInputState == irBrokenState then --We failed again, go to manual
