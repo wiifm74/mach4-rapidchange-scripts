@@ -52,6 +52,7 @@ local coverDwell = 0
 --Touch Off Settings
 local touchOffEnabled = 0
 local toolSetterInternal = 0
+local toolSetterProbeCode = 0
 local xSetter = 0
 local ySetter = 0
 local zSetter = 0
@@ -155,6 +156,7 @@ local function getMachToolNumbers()
 end
 
 local function setupATCMotion()
+  RapidChangeSubroutines.UpdateSettings()
   rcCntl.RecordState()
   rcCntl.SetDefaultUnits()
   rcCntl.CoolantStop()
@@ -171,10 +173,9 @@ function RapidChangeSubroutines.Validate_HomeXYZ()
   end
 end
 
-local function butcherDirection(getValue)
-	if getValue == k.NEGATIVE then return -1 end
-	if getValue == k.POSITIVE then return 1 end
-	
+local function getProbeCode(settingValue)
+	probeCode = {31, 31.1, 31.2, 31.3}
+	return probeCode[settingValue+1]
 end
 
 function RapidChangeSubroutines.UpdateSettings()
@@ -183,7 +184,7 @@ function RapidChangeSubroutines.UpdateSettings()
 
   --Tool Change Settings
   alignment = rcSettings.GetValue(k.ALIGNMENT)
-  direction = butcherDirection(rcSettings.GetValue(k.DIRECTION))
+  direction = rcSettings.GetValue(k.DIRECTION)
   pocketCount = rcSettings.GetValue(k.POCKET_COUNT)
   pocketOffset = rcSettings.GetValue(k.POCKET_OFFSET)
   engageFeed = rcSettings.GetValue(k.ENGAGE_FEED_RATE)
@@ -221,6 +222,7 @@ function RapidChangeSubroutines.UpdateSettings()
   --Touch Off Settings
   touchOffEnabled = rcSettings.GetValue(k.TOUCH_OFF_ENABLED)
   toolSetterInternal = rcSettings.GetValue(k.TOOL_SETTER_INTERNAL)
+  toolSetterProbeCode = getProbeCode(rcSettings.GetValue(k.TOUCH_OFF_G_CODE))
   xSetter = rcSettings.GetValue(k.X_TOOL_SETTER)
   ySetter = rcSettings.GetValue(k.Y_TOOL_SETTER)
   zSetter = rcSettings.GetValue(k.Z_TOOL_SETTER)  
@@ -380,7 +382,7 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
     	return end
 	
 	local inst = mc.mcGetInstance()
-	local probeCode = 31  -- Comment: Massive shortcut until settings and verification are implemented
+	local probeCode = toolSetterProbeCode
 	
 	local xOffset = 0
 	local yOffset = 0
@@ -536,7 +538,7 @@ end
 
 function RapidChangeSubroutines.Teardown_CoverControl()
   if coverControl == k.COVER_CONTROL_AXIS then
-    rcCntl.RecordState()
+    rcCntl.RecordState() -- should this be RestoreState?
   end
 end
 

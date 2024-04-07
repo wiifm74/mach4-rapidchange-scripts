@@ -1,5 +1,5 @@
 function m131()
-  -- rcSub.Validate_HomeXYZ()
+  rcSub.Validate_HomeXYZ()
   rcSub.Validate_ToolTouchOff()
   rcSub.Setup_ToolTouchOff()
   rcSub.Execute_ToolTouchOff()
