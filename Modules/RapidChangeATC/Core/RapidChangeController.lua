@@ -223,6 +223,13 @@ function RapidChangeController.RapidIncremental_Z(zDist)
 	executeLines(RAPID_INCREMENTAL, z(zDist))
 end
 
+--Rapid machine coord move to xPos, yPos
+function RapidChangeController.RapidToMachCoords_XY(xPos, yPos)
+	executeLines(
+		line(RAPID_TO_MACH, x(xPos), y(yPos))
+	)
+end
+
 --Rapid machine coord move to xPos, yPos, then to zPos
 function RapidChangeController.RapidToMachCoords_XY_Z(xPos, yPos, zPos)
 	executeLines(
@@ -266,37 +273,44 @@ function RapidChangeController.GetProbeStrikeStatus()
 	return didStrike
 end
 
-function RapidChangeController.CheckProbe(state, code)
-	local inst = mc.mcGetInstance()
-	local check = true
-	local ProbeSigTable = {
-		[31] = mc.ISIG_PROBE,
-		[31.0] = mc.ISIG_PROBE,
-		[31.1] = mc.ISIG_PROBE1,
-		[31.2] = mc.ISIG_PROBE2,
-		[31.3] = mc.ISIG_PROBE3}
-	local ProbeSignal = ProbeSigTable[code]
-	if (ProbeSignal == nil) then
-		check = false
-		--mc.mcCntlSetLastError(inst, "ERROR: Invalid probing G code")
-		--mc.mcCntlEStop(inst)
-		do return end
+----------- Check Probe State -----------
+--We can use this function to return the current state CheckProbe()
+--or check it for active CheckProbe(1)
+--or check it for inactive CheckProbe(0)
+function RapidChangeController.CheckProbe(state, probeCode)
+
+	----- Select probe signal depending on probe code selected
+	ProbeSig = mc.ISIG_PROBE --Default probe signal, G31
+	if probeCode == 31.1 then
+		ProbeSig = mc.ISIG_PROBE1
+	elseif probeCode == 31.2 then
+		ProbeSig = mc.ISIG_PROBE2
+	elseif probeCode == 31.3 then
+		ProbeSig = mc.ISIG_PROBE3
 	end
-	-- Comment:  	I think the above checks should be implemented in settings and have them verified early.  
-	-- 		Some Mach4 users combine their probe signals into 31.  Others will have them wired separately.
 	
-	------------- Check Probe -------------
-	local hsig = mc.mcSignalGetHandle(inst, ProbeSignal)
+	local check = true --Default value of check
+	local hsig = mc.mcSignalGetHandle(inst, ProbeSig)
 	local ProbeState = mc.mcSignalGetState(hsig)
-	--local errmsg = "ERROR: No contact with probe"
-	if (state == 1) then
-	--	errmsg = "ERROR: Probe obstructed"
+	local errmsg = 'ERROR: No contact with probe' --Default error message
+	
+	if (ProbeState == 1) then --Change the error message
+		errmsg = 'ERROR: Unexpected probe touch'
 	end
-	if (ProbeState == state) then
-	--	mc.mcCntlSetLastError(inst, errmsg)
-	--	mc.mcCntlEStop(inst)
+	
+	if (state == nil) then --We did not specify the value of the state parameter so lets return ProbeState
+		if (ProbeState == 1) then 
+			return (true);
+		else
+			return (false);
+		end
+	end
+	
+	if (ProbeState ~= state) then --CheckProbe failed
+		--mc.mcCntlSetLastError(inst, errmsg)
 		check = false
 	end
+	
 	return check
 end
 

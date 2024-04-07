@@ -53,6 +53,7 @@ local definitions = {
   --TODO: Add Probe input selection for tool setter?
   -- Comment:  there is the beginning of some code in RapidChangeController.lua
   createDefinition(k.TOUCH_OFF_ENABLED, "Tool Touch Off Enabled", "Calls the configured Tool Touch Off M-Code after loading a tool.", k.SWITCH_SETTING),
+  createOptionDefinition(k.TOUCH_OFF_G_CODE, "Tool Setter G-Code", "G-Code for Tool Setter probe signal", k.PROBE_CODE_OPTIONS),  
   createDefinition(k.TOOL_SETTER_INTERNAL, "Tool Setter Internal", "When enabled the dust cover will open for independent tool touch offs.", k.SWITCH_SETTING),
   createDefinition(k.X_TOOL_SETTER, "X Tool Setter", "X Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
   createDefinition(k.Y_TOOL_SETTER, "Y Tool Setter", "Y Position (Machine Coordinates) of the center of the tool setter.", k.DISTANCE_SETTING),
@@ -63,8 +64,8 @@ local definitions = {
   createDefinition(k.SEEK_FEED_RATE, "Seek Feed Rate", "Feedrate for the initial(seek) probe.", k.FEED_SETTING),
   createDefinition(k.SEEK_RETREAT, "Seek Retreat", "Distance to retreat after trigger, before a subsequent(set) probe.", k.UDISTANCE_SETTING),
   createDefinition(k.SET_FEED_RATE, "Set Feed Rate", "Feedrate for any subsequent(seek) probe.", k.FEED_SETTING),
-  createOptionDefinition(k.TOOL_DIAMETER_OFFSET, "Tool Diameter Offset", "Offset calculation to allow for tool diameters larger than tool height setter diameter.", k.TOOL_DIAMETER_OFFSET_OPTIONS),
-createDefinition(k.TOOL_SETTER_DIAMETER, "Tool Setter Diameter", "Diameter of tool height setter.", k.DISTANCE_SETTING),  
+  createOptionDefinition(k.TOOL_DIAMETER_OFFSET, "Tool Diameter Offset", "Offset directions to allow for tool diameters larger than tool height setter diameter.", k.TOOL_DIAMETER_OFFSET_OPTIONS),
+  createDefinition(k.TOOL_SETTER_DIAMETER, "Tool Setter Diameter", "Diameter of tool height setter.", k.DISTANCE_SETTING),  
 
   --Tool Recognition
   createDefinition(k.TOOL_REC_ENABLED, "Tool Recognition Enabled", "Enable infrared tool recognition.", k.SWITCH_SETTING),
@@ -106,16 +107,38 @@ local function getOptionLabels(options)
   return labels
 end
 
+local function getOptionValues(options)
+  local values = {}
+
+  for i, v in ipairs(options) do
+    values[i] = v.value
+  end
+
+  return values
+end
+
+--[[
 local function getSelectedIndex(options, value)
   for i, v in ipairs(options) do
     if v.value == value then
       return i
     else
-      return nil
+      return 0
     end
   end
 end
-
+]]
+local function getSelectedIndex(options, value)
+	local retIndex = 0
+	for i=1,#options do
+		if (options[i].value == value) then
+			retIndex = i
+			break
+		end
+	end
+	return retIndex
+end
+	
 --Setting Provider helper functions
 local function createUISetting(definition)
   local value = RapidChangeSettings.GetValue(definition.key)
@@ -126,6 +149,7 @@ local function createUISetting(definition)
     description = definition.description,
     settingType = definition.settingType,
     optionLabels = getOptionLabels(definition.options),
+	optionValues = getOptionValues(definition.options),
     selectedIndex = getSelectedIndex(definition.options, value),
     isChecked = isChecked(value),
     value = value,
