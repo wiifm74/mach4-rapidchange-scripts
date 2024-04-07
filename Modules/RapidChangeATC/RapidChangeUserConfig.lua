@@ -88,6 +88,10 @@ function RapidChangeUserConfig.Load()
   -- Options: (TRUE, FALSE)
   rcSettings.SetValue(k.TOOL_SETTER_INTERNAL, k.FALSE)
 
+-- Probe Signal G-Code
+  -- Options: (PROBE, PROBE_1, PROBE_2, PROBE_3)
+  rcSettings.SetValue(k.TOUCH_OFF_G_CODE, k.PROBE)
+  
   -- X Position (Machine Coordinates) of the center of the tool setter.
   rcSettings.SetValue(k.X_TOOL_SETTER, 0.000)
 
@@ -114,7 +118,7 @@ function RapidChangeUserConfig.Load()
   rcSettings.SetValue(k.SET_FEED_RATE, 0.000)
   
   -- Tool diameter offset calculation
-  -- Options: (DISABLED, X_AXIS_NEGATIVE, X_AXIS_POSITIVE, Y_AXIS_NEGATIVE, Y_AXIS_POSITIVE, )  
+  -- Options: (DISABLED, X_AXIS_NEGATIVE_Y_AXIS_NEGATIVE, X_AXIS_POSITIVE_Y_AXIS_NEGATIVE, X_AXIS_NEGATIVE_Y_AXIS_POSITIVE, Y_AXIS_POSITIVE_Y_AXIS_POSITIVE, )   
   rcSettings.SetValue(k.TOOL_DIAMETER_OFFSET, k.DISABLED)
   
   -- Tool height setter diameter  

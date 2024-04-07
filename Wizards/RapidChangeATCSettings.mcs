@@ -105,6 +105,36 @@ local GetIntFromDataType = {
 	end
 }
 
+function OnUpdateChoiceSetting( id, index, options )
+	
+	frame:SetStatusText("Got here", 0)
+	local I = "%i"
+	local F4 = "%.4f"
+	local S = "%s"
+	local s = "id: %i, value: "
+	
+	index = index + 1
+	storedSettings[id].selectedIndex = GetIntFromDataType[ type(index) ] (index)
+	storedSettings[id].value = options[index]
+	
+	local requiredDataType = rcSettings.GetRequiredDataType(storedSettings[id].settingType) -- it should always be integer required here
+	
+	if requiredDataType == "float" then 
+		storedSettings[id].value = GetFloatFromDataType[ type(options[index]) ] (options[index])
+		s = s .. F4
+	elseif requiredDataType == "integer" then 
+		storedSettings[id].value = GetIntFromDataType[ type(options[index]) ] (options[index])
+		s = s .. I
+	elseif requiredDataType == "string" then 
+		storedSettings[id].value = GetStringFromDataType[ type(options[index]) ] (options[index])	
+		s = s .. S
+	end
+	
+	s = string.format( s .. " type: %s", id, storedSettings[id].value,  storedSettings[id].settingType)
+	frame:SetStatusText( s, 0 )
+	
+end 
+
 function OnUpdateUISetting( id, value )
 	
 	local I = "%i"
@@ -139,7 +169,6 @@ function UISaveSettings( )
 	end
 
 	mc.mcProfileFlush(inst)
-	rcSub.UpdateSettings( )
 	
 	frame:SetStatusText( "Settings Saved", 0 )
 	
@@ -224,7 +253,7 @@ AddUIControlandSizer = {
 			local iSizer = CreateTwoColumnInput( setting.label, iCtrl )
 			
 			panel:Connect( id, wx.wxEVT_COMMAND_LISTBOX_SELECTED, 
-				function( event ) OnUpdateUISetting( event:GetId( ), iCtrl:GetSelection( ) ) end )
+				function( event ) OnUpdateChoiceSetting( event:GetId( ), iCtrl:GetSelection( ), setting.optionValues ) end )
 			
 			return iSizer
 		end, 
@@ -235,7 +264,7 @@ AddUIControlandSizer = {
 			local iSizer = CreateTwoColumnInput( setting.label, iCtrl )
 			
 			panel:Connect( id, wx.wxEVT_COMMAND_CHOICE_SELECTED, 
-				function( event ) OnUpdateUISetting( event:GetId( ), iCtrl:GetSelection( ) ) end )
+				function( event ) OnUpdateChoiceSetting( event:GetId( ), iCtrl:GetSelection( ), setting.optionValues ) end )
 			
 			return iSizer
 		end, 
@@ -323,7 +352,7 @@ function main( )
     frame:Connect( wx.wxID_ABOUT, wx.wxEVT_COMMAND_MENU_SELECTED, 
         function ( event )
             wx.wxMessageBox( 'Single column version of RapidChange ATC Settings Wizard\n'  ..
-                            'Be careful as there is no data validation if you enter incorrect values.', 
+                            'Be careful as there is only basic data validation if you enter incorrect values.', 
                             "About RapidChange ATC Settings Wizard", 
                             wx.wxOK + wx.wxICON_INFORMATION, 
                             frame )
