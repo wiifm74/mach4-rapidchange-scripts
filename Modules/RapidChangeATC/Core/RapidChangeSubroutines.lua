@@ -174,7 +174,7 @@ function RapidChangeSubroutines.Validate_HomeXYZ()
 end
 
 local function getProbeCode(settingValue)
-	probeCode = {31, 31.1, 31.2, 31.3}
+	local probeCode = {31, 31.1, 31.2, 31.3}
 	return probeCode[settingValue+1]
 end
 
@@ -384,65 +384,90 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 	local inst = mc.mcGetInstance()
 	local probeCode = toolSetterProbeCode
 	
-	local xOffset = 0
-	local yOffset = 0
-	local toolDiameter = 0
-	local toolDescription = ""
+	local xSaved = xSetter
+	local ySaved = ySetter
+	local pointZ = 0
+	local toolDiameter, rc = mc.mcToolGetData(inst, mc.MTOOL_MILL_DIA, currentTool)
+	local toolDescription = mc.mcToolGetDesc(inst, currentTool)
 	local toolLength = 0
 	
-	if (toolDiameterOffset == k.DISABLED) or (toolHeightSetterDiameter == 0) then
-		-- do nothing
-	else
-		toolRadius = mc.mcToolGetData(inst, mc.MTOOL_MILL_RAD, currentTool)  
-		if toolRadius >= ( toolHeightSetterDiameter / 2 ) then
-			if toolDiameterOffset == k.X_AXIS_NEGATIVE then
-				xOffset = -1 * toolRadius
-			elseif toolDiameterOffset == k.X_AXIS_POSITIVE then
-				xOffset = toolRadius
-			elseif toolDiameterOffset == k.Y_AXIS_NEGATIVE then
-				YOffset = -1 * toolRadius
-			elseif toolDiameterOffset == k.Y_AXIS_POSITIVE then
-				YOffset = toolRadius
-			else -- we have a problem
-			end
-		else
-			-- do nothing
-		end
-	end
-
 	-- move to probe xy position at zSeekStart plane
-	rcCntl.RapidToMachCoords_XY_Z(xSetter + xOffset, ySetter + yOffset, zSeekStart)
+	rcCntl.RapidToMachCoords_XY_Z(xSaved, ySaved, zSeekStart)
 	
 	--fast
 	-- confirm probe is free
-	rc = rcCntl.CheckProbe(1, probeCode) 
+	rc = rcCntl.CheckProbe(0, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end
 	
 	-- seek tool setter surface
 	rcCntl.ProbeDown(zSetter - zSeekStart - seekOvershoot, seekFeed)
 	
 	-- confirm probe strike
-	rc = rcCntl.CheckProbe(0, probeCode) 
+	rc = rcCntl.CheckProbe(1, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
+	
+	pointZ, rc = mc.mcAxisGetProbePos(inst, mc.Z_AXIS, mc.MC_TRUE)
+	if rc ~= mc.MERROR_NOERROR then return end
+	toolLength = pointZ - zSetter
+	
+	-- do this operation if tool diameter is wider than tool setter
+	if ((toolDiameter > toolHeightSetterDiameter) and (toolDiameterOffset ~= k.DISABLED)) then
+		local hyp = toolDiameter / 2
+		local opp = toolHeightSetterDiameter / 2
+		local angle = math.asin(opp / hyp) * 2
+		local points = math.floor(math.pi / angle) + 1
+		angle = math.pi / points
+		local pointX, pointY
+		local xOffset = { -1, 1, -1, 1 }
+		local yOffset = { -1, -1, 1, 1 }
+		
+		for i=0,points,1
+		do
+			pointX = xSetter + (math.cos(angle * i) * hyp * xOffset[toolDiameterOffset])
+			pointY = ySetter + (math.sin(angle * i) * hyp * yOffset[toolDiameterOffset])
+			
+			-- retract
+			rcCntl.LinearIncremental_Z(seekRetreat, seekFeed)
+			rc = rcCntl.CheckProbe(0, probeCode) -- ensure probe is not touched
+			if not rc then return end
+			
+			rcCntl.RapidToMachCoords_XY( pointX, pointY )
+			-- seek tool setter surface
+			rcCntl.ProbeDown(-seekRetreat - seekOvershoot, seekFeed) -- probe -z, but we are only interested in longer tool length results
+			
+			rc = rcCntl.CheckProbe(1, probeCode) 
+			if not rc then
+				-- the tool geometry wasn't longer at this xy location
+			else
+				pointZ, rc = mc.mcAxisGetProbePos(inst, mc.Z_AXIS, mc.MC_TRUE)
+				if (pointZ - zSetter) > toolLength then
+					xSaved = pointX
+					ySaved = pointY
+					toolLength = pointZ - zSetter
+				end
+			end
+		end
+	end
 	
 	-- retract
 	rcCntl.LinearIncremental_Z(seekRetreat, seekFeed)
-	
-	--slow
 	-- confirm probe is free
-	rc = rcCntl.CheckProbe(1, probeCode) 
+	rc = rcCntl.CheckProbe(0, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.FALSE) return end
 	
+	-- rapid to saved x,y
+	rcCntl.RapidToMachCoords_XY(xSaved, ySaved)
+	
+	--slow
 	-- seek tool setter surface
 	rcCntl.ProbeDown(-seekRetreat - seekOvershoot, setFeed)
 	
 	-- confirm probe strike
-	rc = rcCntl.CheckProbe(0, probeCode) 
+	rc = rcCntl.CheckProbe(1, probeCode) 
 	if not rc then RapidChangeSubroutines.OnFailedProbeStatus(k.TRUE) return end
 	
 	rcCntl.SetTLO(currentTool, zSetter)
 	
-	toolDescription = mc.mcToolGetDesc(inst, currentTool)
 	toolLength = mc.mcToolGetData(inst, mc.MTOOL_MILL_HEIGHT, currentTool)
 	rcCntl.ShowStatus(string.format("Tool: %i %s length set to %.4f", currentTool, toolDescription, toolLength))
 	
@@ -616,6 +641,9 @@ function RapidChangeSubroutines.Validate_ToolTouchOff()
   getMachToolNumbers()
   if currentTool == 0 then
     rcCntl.Terminate("Tool touch off aborted. No current tool.")
+  end
+  if toolHeightSetterDiameter == 0 then
+	rcCntl.Terminate("Tool touch off aborted. Setter diameter cannot be zero.") 
   end
 end
 
