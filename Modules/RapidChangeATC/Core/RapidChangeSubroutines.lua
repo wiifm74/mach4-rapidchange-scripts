@@ -246,19 +246,21 @@ end
 
 function RapidChangeSubroutines.ConfirmLoad_ToolRecognition()
   rcCntl.RapidToMachCoord_Z(zZone1)
+  wx.wxMillisleep(100)
 
   local irInputState = rcSignals.GetInputState(irInput)
 
   if irInputState ~= irBrokenState then --Failure Zone 1
     rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
-    rcCntl.ShowBox(string.format("Tool %i failed Zone 1 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\n\n", selectedTool, selectedTool))
+    rcCntl.ShowBoxWithAbort(string.format("Tool %i failed Zone 1 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\nPress \"Cancel\" to abort.", selectedTool, selectedTool))
   else --Next check
     rcCntl.RapidToMachCoord_Z(zZone2)
+    wx.wxMillisleep(100)
 
     irInputState = rcSignals.GetInputState(irInput)
     if irInputState == irBrokenState then --Failure Zone 2
       rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
-      rcCntl.ShowBox(string.format("Tool %i failed Zone 2 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\n\n", selectedTool, selectedTool))
+      rcCntl.ShowBoxWithAbort(string.format("Tool %i failed Zone 2 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\nPress \"Cancel\" to abort.", selectedTool, selectedTool))
     else --Success
       rcCntl.RapidToMachCoord_Z(zMoveToProbe)
     end
@@ -290,18 +292,21 @@ end
 
 function RapidChangeSubroutines.ConfirmUnload_ToolRecognition()
   rcCntl.RapidToMachCoord_Z(zZone1)
+  wx.wxMillisleep(100)
 
   local irInputState = rcSignals.GetInputState(irInput)
 
   if irInputState == irBrokenState then --We still have a tool, try again
     rcCntl.LinearToMachCoords_Z_Z(zEngage, zRetreat, engageFeed)
     rcCntl.RapidToMachCoord_Z(zZone1)
+    wx.wxMillisleep(100)
     rcCntl.SpinStop()
+
 
     irInputState = rcSignals.GetInputState(irInput)
     if irInputState == irBrokenState then --We failed again, go to manual
       rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
-      rcCntl.ShowBox(string.format("Tool %i failed to unload properly.\n\nManually unload tool %i and press \"OK\" to resume ATC operations.\n\n", currentTool, currentTool))
+      rcCntl.ShowBoxWithAbort(string.format("Tool %i failed to unload properly.\n\nManually unload tool %i and press \"OK\" to resume ATC operations.\nPress \"Cancel\" to abort.", currentTool, currentTool))
     else -- Success on second attempt
       rcCntl.RapidToMachCoord_Z(zMoveToLoad)
     end

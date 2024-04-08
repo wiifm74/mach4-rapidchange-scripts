@@ -331,6 +331,16 @@ function RapidChangeController.ShowBox(message, terminate)
 	end
 end
 
+function RapidChangeController.ShowBoxWithAbort(message)
+	local result = wx.wxMessageBox(message, "RapidChange ATC", wx.wxOK | wx.wxCANCEL)
+
+	if ( result ~= wx.wxOK ) then
+		RapidChangeController.ShowStatus("Operation aborted.")
+		wx.wxMilliSleep(200)
+		error(message .. " User abort.")
+	end
+end
+
 function RapidChangeController.ShowStatus(message)
 	local rc = mc.mcCntlSetLastError(inst, message)
 	rcErrors.GuardAPIError(rc)
