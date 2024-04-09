@@ -239,7 +239,7 @@ end
 
 --Tool change subroutines
 function RapidChangeSubroutines.ConfirmLoad_Override()
-  rcCntl.RapidToMachCoord_Z(zSafeClearance)
+  --rcCntl.RapidToMachCoord_Z(zSafeClearance)
   rcCntl.SetCurrentTool(selectedTool)
   currentTool = selectedTool
 end
@@ -253,14 +253,14 @@ function RapidChangeSubroutines.ConfirmLoad_ToolRecognition()
     rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
     rcCntl.ShowBox(string.format("Tool %i failed Zone 1 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\n\n", selectedTool, selectedTool))
   else --Next check
-    rcCntl.RapidToMachCoord_Z(zZone2)
+    --rcCntl.RapidToMachCoord_Z(zZone2)
 
     irInputState = rcSignals.GetInputState(irInput)
     if irInputState == irBrokenState then --Failure Zone 2
       rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
       rcCntl.ShowBox(string.format("Tool %i failed Zone 2 recognition.\n\nManually load tool %i and press \"OK\" to resume ATC operations.\n\n", selectedTool, selectedTool))
     else --Success
-      rcCntl.RapidToMachCoord_Z(zMoveToProbe)
+      --rcCntl.RapidToMachCoord_Z(zMoveToProbe)
     end
   end
 
@@ -271,19 +271,19 @@ end
 
 function RapidChangeSubroutines.ConfirmLoad_User()
   rcCntl.SpinStop()
-  rcCntl.RapidToMachCoord_Z(zMoveToProbe)
 
   local message = string.format("Confirm tool %i has properly loaded and press \"OK\" to resume ATC.", selectedTool)
   if pocketMappingEnabled then message = string.format( "Confirm tool %i from pocket %i has properly loaded and press \"OK\" to resume ATC.", selectedTool, getPocket(selectedTool) )  end
   rcCntl.ShowBox(message)
 
+  --rcCntl.RapidToMachCoord_Z(zMoveToProbe)
   rcCntl.SetCurrentTool(selectedTool)
   currentTool = selectedTool
 end
 
 function RapidChangeSubroutines.ConfirmUnload_Override()
   rcCntl.SpinStop()
-  rcCntl.RapidToMachCoord_Z(zSafeClearance)
+  --rcCntl.RapidToMachCoord_Z(zSafeClearance)
   rcCntl.SetCurrentTool(0)
   currentTool = 0
 end
@@ -303,11 +303,11 @@ function RapidChangeSubroutines.ConfirmUnload_ToolRecognition()
       rcCntl.RapidToMachCoords_Z_XY_Z(zSafeClearance, xManual, yManual, zSafeClearance)
       rcCntl.ShowBox(string.format("Tool %i failed to unload properly.\n\nManually unload tool %i and press \"OK\" to resume ATC operations.\n\n", currentTool, currentTool))
     else -- Success on second attempt
-      rcCntl.RapidToMachCoord_Z(zMoveToLoad)
+      --rcCntl.RapidToMachCoord_Z(zMoveToLoad)
     end
   else --Success on first attempt
     rcCntl.SpinStop()
-    rcCntl.RapidToMachCoord_Z(zMoveToLoad)
+    --rcCntl.RapidToMachCoord_Z(zMoveToLoad)
   end
 
   --We should now have unloaded the tool and be at the appropriate height
@@ -317,12 +317,12 @@ end
 
 function RapidChangeSubroutines.ConfirmUnload_User()
   rcCntl.SpinStop()
-  rcCntl.RapidToMachCoord_Z(zMoveToLoad)
-
+  
   local message = string.format("Confirm tool %i has properly unloaded and press \"OK\" to resume ATC.", currentTool)
   if pocketMappingEnabled then message = string.format( "Confirm tool %i from pocket %i has properly unloaded and press \"OK\" to resume ATC.", currentTool, getPocket(currentTool) ) end
   rcCntl.ShowBox(message)
 
+  --rcCntl.RapidToMachCoord_Z(zMoveToLoad)
   rcCntl.SetCurrentTool(0)
   currentTool = 0
 end
@@ -481,13 +481,19 @@ function RapidChangeSubroutines.Execute_ToolTouchOff()
 end
 
 function RapidChangeSubroutines.LoadTool()
+	local magazineSideWinderEnabled = k.ENABLED
 	if selectedTool == 0 then
 		RapidChangeSubroutines.LoadToolZero()
 	elseif isToolInRange(selectedTool) == k.TRUE then
-		RapidChangeSubroutines.LoadToolAuto()
+		if magazineSideWinderEnabled == k.ENABLED then 
+			arseySW.loadPocket(getPocket(selectedTool))
+		else
+			RapidChangeSubroutines.LoadToolAuto()
+		end
 	else
 		RapidChangeSubroutines.LoadToolManual()
 	end
+	rcCntl.RapidToMachCoord_Z(zMoveToProbe)
 end
 
 function RapidChangeSubroutines.LoadToolAuto()
@@ -589,13 +595,19 @@ function RapidChangeSubroutines.Teardown_ToolTouchOff()
 end
 
 function RapidChangeSubroutines.UnloadTool()
+	local magazineSideWinderEnabled = k.ENABLED
   if currentTool == 0 then
     RapidChangeSubroutines.UnloadToolZero()
   elseif isToolInRange(currentTool) == k.TRUE then
-    RapidChangeSubroutines.UnloadToolAuto()
+	if magazineSideWinderEnabled == k.ENABLED then 
+			arseySW.unloadPocket(getPocket(currentTool))
+		else  
+		RapidChangeSubroutines.UnloadToolAuto()
+	end
   else
     RapidChangeSubroutines.UnloadToolManual()
   end
+	rcCntl.RapidToMachCoord_Z(zMoveToLoad)  
 end
 
 function RapidChangeSubroutines.UnloadToolAuto()

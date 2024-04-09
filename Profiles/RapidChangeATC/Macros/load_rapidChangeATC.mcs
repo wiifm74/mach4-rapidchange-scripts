@@ -44,6 +44,9 @@ rcCntl = require "RapidChangeController"
 package.loaded.RapidChangeSignals = nil
 rcSignals = require "RapidChangeSignals"
 
+package.loaded.RapidChangeSideWinder = nil
+arseySW = require "RapidChangeSideWinder"
+
 package.loaded.RapidChangeSubroutines = nil
 rcSub = require "RapidChangeSubroutines"
 rcSub.UpdateSettings()
